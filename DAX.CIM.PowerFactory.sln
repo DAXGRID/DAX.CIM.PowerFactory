@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CIM.PFAdapter.Tests", "DAX.CIM.PFAdapter.Tests\DAX.CIM.PFAdapter.Tests.csproj", "{293D4961-0688-40E3-ACB9-E7E02B254B7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CIM.PFAdapter", "DAX.CIM.PFAdapter\DAX.CIM.PFAdapter.csproj", "{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CIM.PhysicalNetworkModel", "..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel\DAX.CIM.PhysicalNetworkModel.csproj", "{F8349941-A0F6-4D91-8DFE-998E778B1AEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CIM.PhysicalNetworkModel.Traversal", "..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel.Traversal\DAX.CIM.PhysicalNetworkModel.Traversal.csproj", "{2FE2E018-B583-4561-A141-44A71FEFB352}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CoordinateConverter", "DAX.CoordinateConverter\DAX.CoordinateConverter.csproj", "{B4DECF00-2963-44C1-9E7B-FA2AD65C5D05}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{293D4961-0688-40E3-ACB9-E7E02B254B7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{293D4961-0688-40E3-ACB9-E7E02B254B7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{293D4961-0688-40E3-ACB9-E7E02B254B7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{293D4961-0688-40E3-ACB9-E7E02B254B7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8349941-A0F6-4D91-8DFE-998E778B1AEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8349941-A0F6-4D91-8DFE-998E778B1AEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8349941-A0F6-4D91-8DFE-998E778B1AEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8349941-A0F6-4D91-8DFE-998E778B1AEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FE2E018-B583-4561-A141-44A71FEFB352}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FE2E018-B583-4561-A141-44A71FEFB352}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FE2E018-B583-4561-A141-44A71FEFB352}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FE2E018-B583-4561-A141-44A71FEFB352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4DECF00-2963-44C1-9E7B-FA2AD65C5D05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4DECF00-2963-44C1-9E7B-FA2AD65C5D05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4DECF00-2963-44C1-9E7B-FA2AD65C5D05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4DECF00-2963-44C1-9E7B-FA2AD65C5D05}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
