@@ -1,4 +1,5 @@
-﻿using DAX.CIM.PhysicalNetworkModel.Traversal;
+﻿using DAX.CIM.PFAdapter.PreProcessors;
+using DAX.CIM.PhysicalNetworkModel.Traversal;
 using DAX.CIM.PhysicalNetworkModel.Traversal.Extensions;
 using System;
 using System.Collections.Generic;
@@ -16,16 +17,21 @@ namespace DAX.CIM.PFAdapter.CGMES
     /// </summary>
     public class EQ_Writer
     {
+        public static DateTime _timeStamp = DateTime.Now;
+        public static string _eqModelId = Guid.NewGuid().ToString();
+
+        public bool ForceThreePhases = false;
+
         string _fileName = null;
         StreamWriter _writer = null;
         CimContext _cimContext = null;
 
         string _startContent = @"<?xml version='1.0' encoding='UTF-8'?>
   <rdf:RDF xmlns:cim='http://iec.ch/TC57/2013/CIM-schema-cim16#' xmlns:entsoe='http://entsoe.eu/CIM/SchemaExtension/3/1#' xmlns:md='http://iec.ch/TC57/61970-552/ModelDescription/1#' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
-  <md:FullModel rdf:about='urn:uuid:8168421c-c68f-3376-f16c-c2b7198bcb2e'>
-    <md:Model.scenarioTime>2030-01-02T09:00:00</md:Model.scenarioTime>
-    <md:Model.created>2014-10-22T09:01:25.830</md:Model.created>
-    <md:Model.description>DAX PowerFactory RDF Export</md:Model.description>
+  <md:FullModel rdf:about='" + EQ_Writer._eqModelId.ToString() + @"'>
+    <md:Model.scenarioTime>" + _timeStamp.ToString() + @"</md:Model.scenarioTime>
+    <md:Model.created>" + _timeStamp.ToString() + @"</md:Model.created>    
+    <md:Model.description>DAX Konstant PowerFactory Export</md:Model.description>
     <md:Model.version>4</md:Model.version>
 	<md:Model.profile>http://entsoe.eu/CIM/EquipmentCore/3/1</md:Model.profile>
     <md:Model.profile>http://entsoe.eu/CIM/EquipmentOperation/3/1</md:Model.profile>
@@ -48,12 +54,17 @@ namespace DAX.CIM.PFAdapter.CGMES
 
   <cim:BaseVoltage rdf:ID='_c63f79cc-7953-4ab6-9fa6-f8c729bf895b'>
     <cim:IdentifiedObject.name>10.00</cim:IdentifiedObject.name>
-    <cim:BaseVoltage.nominalVoltage>10</cim:BaseVoltage.nominalVoltage>
+    <cim:BaseVoltage.nominalVoltage>10.5</cim:BaseVoltage.nominalVoltage>
+  </cim:BaseVoltage>
+
+  <cim:BaseVoltage rdf:ID='_c1f24620-610b-41dd-bc75-7f14a7bad90f'>
+    <cim:IdentifiedObject.name>15.00</cim:IdentifiedObject.name>
+    <cim:BaseVoltage.nominalVoltage>15.2</cim:BaseVoltage.nominalVoltage>
   </cim:BaseVoltage>
 
   <cim:BaseVoltage rdf:ID='_60ee59f3-5ed7-4551-b623-f4346554b22a'>
     <cim:IdentifiedObject.name>60.00</cim:IdentifiedObject.name>
-    <cim:BaseVoltage.nominalVoltage>60</cim:BaseVoltage.nominalVoltage>
+    <cim:BaseVoltage.nominalVoltage>64</cim:BaseVoltage.nominalVoltage>
   </cim:BaseVoltage>
 
 ";
@@ -63,13 +74,17 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         HashSet<string> _cnAlreadyAdded = new HashSet<string>();
 
-        public EQ_Writer(string fileName, CimContext cimContext)
+        MappingContext _mappingContext;
+
+        public EQ_Writer(string fileName, CimContext cimContext, MappingContext mappingContext)
         {
             _fileName = fileName;
             _cimContext = cimContext;
+            _mappingContext = mappingContext;
 
             _baseVoltageIdLookup.Add(400, "c6dd6dc7-d8b0-4beb-b78d-9e472b038ffc");
             _baseVoltageIdLookup.Add(10000, "c63f79cc-7953-4ab6-9fa6-f8c729bf895b");
+            _baseVoltageIdLookup.Add(15000, "c1f24620-610b-41dd-bc75-7f14a7bad90f");
             _baseVoltageIdLookup.Add(60000, "60ee59f3-5ed7-4551-b623-f4346554b22a");
 
             Open();
@@ -88,7 +103,124 @@ namespace DAX.CIM.PFAdapter.CGMES
             _writer.Write(xml);
             _writer.Close();
         }
-   
+
+        /* ENTSO-E example
+        <cim:ExternalNetworkInjection rdf:ID="_4c3f8092-0e83-9145-b993-765c24aeb0d3">
+		    <cim:IdentifiedObject.name>EX_NET_INJ_1</cim:IdentifiedObject.name>
+		    <cim:Equipment.EquipmentContainer rdf:resource="#_d0486169-2205-40b2-895e-b672ecb9e5fc"/>
+		    <cim:ExternalNetworkInjection.governorSCD>0.99</cim:ExternalNetworkInjection.governorSCD>
+		    <cim:ExternalNetworkInjection.maxP>99.99</cim:ExternalNetworkInjection.maxP>
+		    <cim:ExternalNetworkInjection.minP>9.99</cim:ExternalNetworkInjection.minP>
+		    <cim:ExternalNetworkInjection.maxQ>99.99</cim:ExternalNetworkInjection.maxQ>
+		    <cim:ExternalNetworkInjection.minQ>9.99</cim:ExternalNetworkInjection.minQ>
+		    <cim:ConductingEquipment.BaseVoltage rdf:resource="#_63893f24-5b4e-407c-9a1e-4ff71121f33c"/>
+		    <cim:RegulatingCondEq.RegulatingControl rdf:resource="#_af8df1d5-124e-d64d-8d29-034dc90e7d77"/>
+		    <cim:IdentifiedObject.description>EX_NET_INJ_1</cim:IdentifiedObject.description>
+		    <cim:IdentifiedObject.mRID>4c3f8092-0e83-9145-b993-765c24aeb0d3</cim:IdentifiedObject.mRID>
+		    <entsoe:IdentifiedObject.shortName>EX_NET_INJ_1</entsoe:IdentifiedObject.shortName>
+		    <entsoe:IdentifiedObject.energyIdentCodeEic>00X-BE-BE-000547</entsoe:IdentifiedObject.energyIdentCodeEic>
+		    <cim:Equipment.aggregate>false</cim:Equipment.aggregate>
+	    </cim:ExternalNetworkInjection>
+
+
+     <cim:Line rdf:ID="_2b659afe-2ac3-425c-9418-3383e09b4b39">
+		<cim:IdentifiedObject.name>container of BE-Line_1</cim:IdentifiedObject.name>
+		<cim:Line.Region rdf:resource="#_c1d5c0378f8011e08e4d00247eb1f55e"/>
+		<cim:IdentifiedObject.description>container of BE-Line_1</cim:IdentifiedObject.description>
+		<cim:IdentifiedObject.mRID>2b659afe-2ac3-425c-9418-3383e09b4b39</cim:IdentifiedObject.mRID>
+		<entsoe:IdentifiedObject.shortName>BE-Line_1</entsoe:IdentifiedObject.shortName>
+		<entsoe:IdentifiedObject.energyIdentCodeEic>00X-BE-BE-000561</entsoe:IdentifiedObject.energyIdentCodeEic>
+	 </cim:Line>
+
+     <cim:ACLineSegment rdf:ID="_17086487-56ba-4979-b8de-064025a6b4da">
+		<cim:IdentifiedObject.name>BE-Line_1</cim:IdentifiedObject.name>
+		<cim:Equipment.EquipmentContainer rdf:resource="#_2b659afe-2ac3-425c-9418-3383e09b4b39"/>
+		<cim:ACLineSegment.r>2.200000</cim:ACLineSegment.r>
+		<cim:ACLineSegment.x>68.200000</cim:ACLineSegment.x>
+		<cim:ACLineSegment.bch>0.0000829380</cim:ACLineSegment.bch>
+		<cim:Conductor.length>22.000000</cim:Conductor.length>
+		<cim:ACLineSegment.gch>0.0000308000</cim:ACLineSegment.gch>
+		<cim:Equipment.aggregate>false</cim:Equipment.aggregate>
+		<cim:ConductingEquipment.BaseVoltage rdf:resource="#_7891a026ba2c42098556665efd13ba94"/>
+		<entsoe:IdentifiedObject.shortName>BE-L_1</entsoe:IdentifiedObject.shortName>
+		<entsoe:IdentifiedObject.energyIdentCodeEic>10T-AT-DE-000061</entsoe:IdentifiedObject.energyIdentCodeEic>
+		<cim:IdentifiedObject.description>10T-AT-DE-000061</cim:IdentifiedObject.description>
+		<cim:IdentifiedObject.mRID>17086487-56ba-4979-b8de-064025a6b4da</cim:IdentifiedObject.mRID>
+	</cim:ACLineSegment>
+
+    <cim:RatioTapChanger rdf:ID="_641b8688-b0bc-49c3-9a49-f129851deb4c">
+		<cim:IdentifiedObject.name>BE HVDC TR1</cim:IdentifiedObject.name>
+		<cim:TapChanger.neutralU>225.000000</cim:TapChanger.neutralU>
+		<cim:TapChanger.lowStep>1</cim:TapChanger.lowStep>
+		<cim:TapChanger.highStep>21</cim:TapChanger.highStep>
+		<cim:TapChanger.neutralStep>11</cim:TapChanger.neutralStep>
+		<cim:TapChanger.normalStep>7</cim:TapChanger.normalStep>
+		<cim:RatioTapChanger.stepVoltageIncrement>1.000000</cim:RatioTapChanger.stepVoltageIncrement>
+		<cim:TapChanger.ltcFlag>true</cim:TapChanger.ltcFlag>
+		<cim:TapChanger.TapChangerControl rdf:resource="#_87e1f736-bde8-499e-abf7-90b310825fb1"/>
+		<cim:RatioTapChanger.tculControlMode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#TransformerControlMode.volt"/>
+		<cim:RatioTapChanger.TransformerEnd rdf:resource="#_c9989583-d2c3-4d52-9f3b-7a98a8211fb6"/>
+		<cim:RatioTapChanger.RatioTapChangerTable rdf:resource="#_5350c2f2-d5f3-8a46-b181-ff619d3cec9d"/>
+		<entsoe:IdentifiedObject.shortName>BE HVDC TR1</entsoe:IdentifiedObject.shortName>
+		<cim:IdentifiedObject.description>BE HVDC TR1</cim:IdentifiedObject.description>
+		<cim:IdentifiedObject.mRID>641b8688-b0bc-49c3-9a49-f129851deb4c</cim:IdentifiedObject.mRID>
+		<entsoe:IdentifiedObject.energyIdentCodeEic>00X-BE-BE-000683</entsoe:IdentifiedObject.energyIdentCodeEic>
+	</cim:RatioTapChanger>
+
+        */
+
+        public void AddLine(string mrid, string name)
+        {
+            string xml = "<cim:Line rdf:ID = '_" + mrid + "'>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:Line.Region rdf:resource='#_0472a781-c766-11e1-8775-005056c00008'/>\r\n";
+            xml += "</cim:Line>\r\n\r\n";
+
+            _writer.Write(xml);
+        }
+
+        public void AddPNMObject(PhysicalNetworkModel.ExternalNetworkInjection eni)
+        {
+            string xml = "<cim:ExternalNetworkInjection rdf:ID='_" + eni.mRID + "'>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + eni.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + eni.EquipmentContainer.@ref + "'/>\r\n";
+            xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(eni.BaseVoltage) + "'/>\r\n";
+
+            if (eni.governorSCD != null)
+                xml += "  <cim:ExternalNetworkInjection.governorSCD>" + DoubleToString(eni.governorSCD.Value) + "</cim:ExternalNetworkInjection.governorSCD>\r\n";
+
+            if (eni.maxP != null)
+                xml += "  <cim:ExternalNetworkInjection.maxP>" + DoubleToString(eni.maxP.Value) + "</cim:ExternalNetworkInjection.maxP>\r\n";
+
+            if (eni.minP != null)
+                xml += "  <cim:ExternalNetworkInjection.minP>" + DoubleToString(eni.minP.Value) + "</cim:ExternalNetworkInjection.minP>\r\n";
+
+            if (eni.maxQ != null)
+                xml += "  <cim:ExternalNetworkInjection.maxQ>" + DoubleToString(eni.maxQ.Value) + "</cim:ExternalNetworkInjection.maxQ>\r\n";
+
+            if (eni.minQ != null)
+                xml += "  <cim:ExternalNetworkInjection.minQ>" + DoubleToString(eni.minQ.Value) + "</cim:ExternalNetworkInjection.minQ>\r\n";
+
+            xml += "  <cim:ExternalNetworkInjection.maxR0ToX0Ratio>" + DoubleToString(eni.maxR0ToX0Ratio) + "</cim:ExternalNetworkInjection.maxR0ToX0Ratio>\r\n";
+            xml += "  <cim:ExternalNetworkInjection.maxR1ToX1Ratio>" + DoubleToString(eni.maxR1ToX1Ratio) + "</cim:ExternalNetworkInjection.maxR1ToX1Ratio>\r\n";
+            xml += "  <cim:ExternalNetworkInjection.maxZ0ToZ1Ratio>" + DoubleToString(eni.maxZ0ToZ1Ratio) + "</cim:ExternalNetworkInjection.maxZ0ToZ1Ratio>\r\n";
+
+            xml += "  <cim:ExternalNetworkInjection.minR0ToX0Ratio>" + DoubleToString(eni.minR0ToX0Ratio) + "</cim:ExternalNetworkInjection.minR0ToX0Ratio>\r\n";
+            xml += "  <cim:ExternalNetworkInjection.minR1ToX1Ratio>" + DoubleToString(eni.minR1ToX1Ratio) + "</cim:ExternalNetworkInjection.minR1ToX1Ratio>\r\n";
+            xml += "  <cim:ExternalNetworkInjection.minZ0ToZ1Ratio>" + DoubleToString(eni.minZ0ToZ1Ratio) + "</cim:ExternalNetworkInjection.minZ0ToZ1Ratio>\r\n";
+
+     
+            if (eni.minInitialSymShCCurrent != null)
+                xml += "  <cim:ExternalNetworkInjection.minInitialSymShCCurrent>" + DoubleToString(eni.minInitialSymShCCurrent.Value) + "</cim:ExternalNetworkInjection.minInitialSymShCCurrent>\r\n";
+
+            xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
+
+            xml += "  <cim:ExternalNetworkInjection.governorSCD>0</cim:ExternalNetworkInjection.governorSCD>\r\n";
+
+             xml += "</cim:ExternalNetworkInjection>\r\n\r\n";
+            _writer.Write(xml);
+        }
+
         public void AddPNMObject(PhysicalNetworkModel.Substation substation)
         {
             string xml = "<cim:Substation rdf:ID = '_" + substation.mRID + "'>\r\n";
@@ -120,21 +252,30 @@ namespace DAX.CIM.PFAdapter.CGMES
             _writer.Write(xml);
         }
 
-        public void AddPNMObject(PhysicalNetworkModel.ACLineSegment acls)
+        public void AddPNMObject(PhysicalNetworkModel.ACLineSegment acls, string lineMrid = null)
         {
             string xml = "<cim:ACLineSegment rdf:ID='_" + acls.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + acls.name + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(acls.BaseVoltage) + "'/>\r\n";
-            xml += "  <cim:Conductor.length>" + DoubleToString(acls.length.Value) + "</cim:Conductor.length>\r\n";
+
+            if (lineMrid != null)
+            {
+                xml += "  <cim:Equipment.EquipmentContainer rdf:resource='#_" + lineMrid + "'/>\r\n";
+            }
+
+            // PF CGMES expect km, but vi got m in GIS, so we need to divede by 1000
+            xml += "  <cim:Conductor.length>" + DoubleToString(acls.length.Value / 1000) + "</cim:Conductor.length>\r\n";
+
+            
             if (acls.b0ch != null)
-                xml += "  <cim:ACLineSegment.b0ch>" + DoubleToString(acls.b0ch.Value) + "</cim:ACLineSegment.b0ch>\r\n";
+                xml += "  <cim:ACLineSegment.b0ch>" + DoubleToString(acls.b0ch.Value / 1000000) + "</cim:ACLineSegment.b0ch>\r\n";
             if (acls.bch != null)
-                xml += "  <cim:ACLineSegment.bch>" + DoubleToString(acls.bch.Value) + "</cim:ACLineSegment.bch>\r\n";
+                xml += "  <cim:ACLineSegment.bch>" + DoubleToString(acls.bch.Value / 1000000) + "</cim:ACLineSegment.bch>\r\n";
             if (acls.g0ch != null)
-                xml += "  <cim:ACLineSegment.g0ch>" + DoubleToString(acls.g0ch.Value) + "</cim:ACLineSegment.g0ch>\r\n";
+                xml += "  <cim:ACLineSegment.g0ch>" + DoubleToString(acls.g0ch.Value / 1000000) + "</cim:ACLineSegment.g0ch>\r\n";
             if (acls.gch != null)
-                xml += "  <cim:ACLineSegment.gch>" + DoubleToString(acls.gch.Value) + "</cim:ACLineSegment.gch>\r\n";
+                xml += "  <cim:ACLineSegment.gch>" + DoubleToString(acls.gch.Value / 1000000) + "</cim:ACLineSegment.gch>\r\n";
             if (acls.r != null)
                 xml += "  <cim:ACLineSegment.r>" + DoubleToString(acls.r.Value) + "</cim:ACLineSegment.r>\r\n";
             if (acls.r0 != null)
@@ -143,6 +284,8 @@ namespace DAX.CIM.PFAdapter.CGMES
                 xml += "  <cim:ACLineSegment.x>" + DoubleToString(acls.x.Value) + "</cim:ACLineSegment.x>\r\n";
             if (acls.x0 != null)
                 xml += "  <cim:ACLineSegment.x0>" + DoubleToString(acls.x0.Value) + "</cim:ACLineSegment.x0>\r\n";
+            
+
             xml += "</cim:ACLineSegment>\r\n\r\n";
             _writer.Write(xml);
         }
@@ -200,7 +343,8 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.Fuse fuse)
         {
-            string xml = "<cim:Fuse rdf:ID='_" + fuse.mRID + "'>\r\n";
+            // create disconnector, because PF thinks that fuse is not a conduction equipment
+            string xml = "<cim:Disconnector rdf:ID='_" + fuse.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + fuse.name + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + fuse.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(fuse.BaseVoltage) + "'/>\r\n";
@@ -211,10 +355,41 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             xml += "  <cim:Switch.normalOpen>" + normalOpen + "</cim:Switch.normalOpen>\r\n";
             xml += "  <cim:Switch.retained>false</cim:Switch.retained>\r\n";
-            xml += "</cim:Fuse>\r\n\r\n";
+            xml += "</cim:Disconnector>\r\n\r\n";
             _writer.Write(xml);
         }
 
+        public void AddPNMObject(PhysicalNetworkModel.PetersenCoil coil)
+        {
+            string xml = "<cim:PetersenCoil rdf:ID='_" + coil.mRID + "'>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + coil.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + coil.EquipmentContainer.@ref + "'/>\r\n";
+            xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(coil.BaseVoltage) + "'/>\r\n";
+
+            if (coil.nominalU != null)
+                xml += "  <cim:PetersenCoil.nominalU>" + DoubleToString(ConvertToEntsoeVoltage(coil.nominalU.Value)) + "</cim:PetersenCoil.nominalU>\r\n";
+
+            if (coil.positionCurrent != null)
+                xml += "  <cim:PetersenCoil.positionCurrent>" + DoubleToString(coil.positionCurrent.Value) + "</cim:PetersenCoil.positionCurrent>\r\n";
+
+            if (coil.offsetCurrent != null)
+                xml += "  <cim:PetersenCoil.offsetCurrent>" + DoubleToString(coil.offsetCurrent.Value) + "</cim:PetersenCoil.offsetCurrent>\r\n";
+
+            if (coil.r != null)
+                xml += "  <cim:EarthFaultCompensator.r>" + DoubleToString(coil.r.Value) + "</cim:EarthFaultCompensator.r>\r\n";
+
+            if (coil.xGroundMin != null)
+                xml += "  <cim:PetersenCoil.xGroundMin>" + DoubleToString(coil.xGroundMin.Value) + "</cim:PetersenCoil.xGroundMin>\r\n";
+
+            if (coil.xGroundMax != null)
+                xml += "  <cim:PetersenCoil.xGroundMax>" + DoubleToString(coil.xGroundMax.Value) + "</cim:PetersenCoil.xGroundMax>\r\n";
+
+            if (coil.xGroundNominal != null)
+                xml += "  <cim:PetersenCoil.xGroundNominal>" + DoubleToString(coil.xGroundNominal.Value) + "</cim:PetersenCoil.xGroundNominal>\r\n";
+
+            xml += "</cim:PetersenCoil>\r\n\r\n";
+            _writer.Write(xml);
+        }
 
 
         public void AddPNMObject(PhysicalNetworkModel.BusbarSection busbar)
@@ -230,10 +405,25 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.Terminal terminal)
         {
+
+            if (terminal.ConductingEquipment.@ref == "76c96252-b533-44b1-aac2-9efb184dc9e7")
+            {
+
+            }
+
             string xml = "<cim:Terminal rdf:ID = '_" + terminal.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + "T" + terminal.sequenceNumber + "</cim:IdentifiedObject.name>\r\n";
+            if (terminal.name == null)
+                xml += "  <cim:IdentifiedObject.name>" + "T" + terminal.sequenceNumber + "</cim:IdentifiedObject.name>\r\n";
+            else
+                xml += "  <cim:IdentifiedObject.name>" + terminal.name + "</cim:IdentifiedObject.name>\r\n";
+
             xml += "  <cim:ACDCTerminal.sequenceNumber>" + terminal.sequenceNumber + "</cim:ACDCTerminal.sequenceNumber>\r\n";
-            xml += "  <cim:Terminal.phases rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#PhaseCode.ABC'/>\r\n";
+
+            if (!ForceThreePhases)
+                xml += "  <cim:Terminal.phases rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#PhaseCode." + terminal.phases.ToString() + "'/>\r\n";
+            else
+                xml += "  <cim:Terminal.phases rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#PhaseCode.ABCN'/>\r\n";
+
 
             if (terminal.ConnectivityNode != null)
                 xml += "  <cim:Terminal.ConnectivityNode rdf:resource = '#_" + terminal.ConnectivityNode.@ref + "'/>\r\n";
@@ -245,24 +435,54 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.ConnectivityNode cn)
         {
+            if (cn.mRID == "9ecf20a1-980c-74d3-b1ab-67d2fc9180bb")
+            {
+
+            }
+
             if (!_cnAlreadyAdded.Contains(cn.mRID))
             {
-                string xml = "<cim:ConnectivityNode rdf:ID='_" + cn.mRID + "'>\r\n";
+                var neighbors = cn.GetNeighborConductingEquipments();
 
-                if (cn.name != null)
-                    xml += "  <cim:IdentifiedObject.name>" + cn.name + "</cim:IdentifiedObject.name>\r\n";
+                // Only add cn if we can find a voltage level to ref it to. PF requires this.
+                if (_mappingContext.ConnectivityNodeToVoltageLevel.ContainsKey(cn) || neighbors.Exists(o => o is PhysicalNetworkModel.ConductingEquipment && o.BaseVoltage > 0))
+                {
 
-                if (!cn.IsInsideSubstation())
-                    throw new ArgumentException("Connectivity Node with mRID=" + cn.mRID + " has no parent. This will not work in PowerFactory CGMES import.");
+                    string xml = "<cim:ConnectivityNode rdf:ID='_" + cn.mRID + "'>\r\n";
 
-                // PF want's cn to be put into voltage level container
-                var cnSt = cn.GetSubstation(true, _cimContext);
-                var fistCi = cn.GetNeighborConductingEquipments().First(o => o is PhysicalNetworkModel.ConductingEquipment && o.BaseVoltage > 0);
-                var cnVl = cnSt.GetVoltageLevel(fistCi.BaseVoltage);
+                    if (cn.name != null)
+                        xml += "  <cim:IdentifiedObject.name>" + cn.name + "</cim:IdentifiedObject.name>\r\n";
 
-                xml += "  <cim:ConnectivityNode.ConnectivityNodeContainer rdf:resource='#_" + cnVl.mRID + "'/>\r\n";
-                xml += "</cim:ConnectivityNode>\r\n\r\n";
-                _writer.Write(xml);
+                    if (!cn.IsInsideSubstation())
+                    {
+                        //cn.IsInsideSubstation();
+                        //throw new ArgumentException("Connectivity Node with mRID=" + cn.mRID + " has no parent. This will not work in PowerFactory CGMES import.");
+                    }
+                    string vlMrid = null;
+
+                    if (_mappingContext.ConnectivityNodeToVoltageLevel.ContainsKey(cn))
+                    {
+                        vlMrid = _mappingContext.ConnectivityNodeToVoltageLevel[cn].mRID;
+                    }
+                    else
+                    {
+                        // Ok, we must be in a real substation then. Try find voltage level on neighboor
+                        var cnSt = cn.GetSubstation(true, _cimContext);
+                      
+
+
+                        var fistCi = neighbors.First(o => o is PhysicalNetworkModel.ConductingEquipment && o.BaseVoltage > 0);
+                        var cnVl = cnSt.GetVoltageLevel(fistCi.BaseVoltage, false);
+
+                        if (cnVl != null)
+                            vlMrid = cnVl.mRID;
+
+                    }
+
+                    xml += "  <cim:ConnectivityNode.ConnectivityNodeContainer rdf:resource='#_" + vlMrid + "'/>\r\n";
+                    xml += "</cim:ConnectivityNode>\r\n\r\n";
+                    _writer.Write(xml);
+                }
             }
 
             _cnAlreadyAdded.Add(cn.mRID);
@@ -286,45 +506,145 @@ namespace DAX.CIM.PFAdapter.CGMES
             xml += "  <cim:TransformerEnd.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(end.BaseVoltage) + "'/>\r\n";
             xml += "  <cim:TransformerEnd.Terminal rdf:resource='#_" + end.Terminal.@ref + "'/>\r\n";
             xml += "  <cim:PowerTransformerEnd.PowerTransformer rdf:resource = '#_" + end.PowerTransformer.@ref + "'/>\r\n";
-            xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
-            xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Y'/>\r\n";
+            
+
+            if (end.endNumber == "1")
+            {
+                // Mellemspændings trafo
+                if (end.BaseVoltage < 20000)
+                {
+                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.D'/>\r\n";
+                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
+                }
+                // Højspændings trafo
+                else
+                {
+                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
+                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
+                }
+
+                //xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
+            }
+            if (end.endNumber == "2")
+            {
+                // Mellemspændings trafo
+                if (end.BaseVoltage < 20000)
+                {
+                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
+                    xml += "  <cim:TransformerEnd.grounded>true</cim:TransformerEnd.grounded>\r\n";
+                }
+                // Højspændings trafo
+                else
+                {
+                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
+                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
+                }
+
+                if (end.phaseAngleClock != null)
+                    xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
+            }
+
 
             if (end.b != null)
-                xml += "  <cim:PowerTransformerEnd.b>"+ end.b.Value +"</cim:PowerTransformerEnd.b>\r\n";
+                xml += "  <cim:PowerTransformerEnd.b>"+ end.b.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.b>\r\n";
 
             if (end.b0 != null)
-                xml += "  <cim:PowerTransformerEnd.b0>" + end.b0.Value + "</cim:PowerTransformerEnd.b0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.b0>" + end.b0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.b0>\r\n";
 
             if (end.g != null)
-                xml += "  <cim:PowerTransformerEnd.g>" + end.g.Value + "</cim:PowerTransformerEnd.g>\r\n";
+                xml += "  <cim:PowerTransformerEnd.g>" + end.g.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.g>\r\n";
 
             if (end.g0 != null)
-                xml += "  <cim:PowerTransformerEnd.g0>" + end.g0.Value + "</cim:PowerTransformerEnd.g0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.g0>" + end.g0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.g0>\r\n";
 
             if (end.r != null)
-                xml += "  <cim:PowerTransformerEnd.r>" + end.r.Value + "</cim:PowerTransformerEnd.r>\r\n";
+                xml += "  <cim:PowerTransformerEnd.r>" + end.r.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.r>\r\n";
 
             if (end.r0 != null)
-                xml += "  <cim:PowerTransformerEnd.r0>" + end.r0.Value + "</cim:PowerTransformerEnd.r0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.r0>" + end.r0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.r0>\r\n";
 
             if (end.x != null)
-                xml += "  <cim:PowerTransformerEnd.x>" + end.x.Value + "</cim:PowerTransformerEnd.x>\r\n";
+                xml += "  <cim:PowerTransformerEnd.x>" + end.x.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.x>\r\n";
 
             if (end.x0 != null)
-                xml += "  <cim:PowerTransformerEnd.x0>" + end.x0 + "</cim:PowerTransformerEnd.x0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.x0>" + end.x0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.x0>\r\n";
 
             if (end.ratedU != null)
-                xml += "  <cim:PowerTransformerEnd.ratedU>" + end.ratedU.Value + "</cim:PowerTransformerEnd.ratedU>\r\n";
+                xml += "  <cim:PowerTransformerEnd.ratedU>" + (end.ratedU.Value / 1000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedU>\r\n";
 
             if (end.ratedS != null)
-                xml += "  <cim:PowerTransformerEnd.ratedS>" + end.ratedS.Value + "</cim:PowerTransformerEnd.ratedS>\r\n";
+                xml += "  <cim:PowerTransformerEnd.ratedS>" + (end.ratedS.Value / 1000000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedS>\r\n";
 
-            if (end.phaseAngleClock != null)
-                xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
 
             xml += "</cim:PowerTransformerEnd>\r\n\r\n";
             _writer.Write(xml);
         }
+
+
+        public void AddPNMObject(PhysicalNetworkModel.EnergyConsumer ec)
+        {
+            if (ec.EquipmentContainer != null)
+            {
+                string xml = "<cim:EnergyConsumer rdf:ID = '_" + ec.mRID + "'>\r\n";
+                xml += "  <cim:IdentifiedObject.name>" + ec.name + "</cim:IdentifiedObject.name>\r\n";
+                xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + ec.EquipmentContainer.@ref + "'/>\r\n";
+                xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(ec.BaseVoltage) + "'/>\r\n";
+                xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
+                xml += "</cim:EnergyConsumer>\r\n\r\n";
+
+                _writer.Write(xml);
+            }
+        }
+
+        public void AddPNMObject(PhysicalNetworkModel.RatioTapChanger tap)
+        {
+
+            string xml = "<cim:RatioTapChanger rdf:ID = '_" + tap.mRID + "'>\r\n";
+
+            xml += "  <cim:RatioTapChanger.TransformerEnd rdf:resource='#_" + tap.TransformerEnd.@ref + "'/>\r\n";
+            xml += "  <cim:IdentifiedObject.name>TAP</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:TapChanger.neutralU>" + DoubleToString(tap.neutralU.Value / 1000) + "</cim:TapChanger.neutralU>\r\n";
+            xml += "  <cim:TapChanger.neutralStep>" + tap.neutralStep + "</cim:TapChanger.neutralStep>\r\n";
+
+            if (tap.normalStep != null && tap.normalStep != "")
+                xml += "  <cim:TapChanger.normalStep>" + tap.normalStep + "</cim:TapChanger.normalStep>\r\n";
+
+            xml += "  <cim:TapChanger.lowStep>" + tap.lowStep + "</cim:TapChanger.lowStep>\r\n";
+            xml += "  <cim:TapChanger.highStep>" + tap.highStep + "</cim:TapChanger.highStep>\r\n";
+            xml += "  <cim:TapChanger.ltcFlag>" + (tap.ltcFlag ? "true" : "false") + "</cim:TapChanger.ltcFlag>\r\n";
+            xml += "  <cim:RatioTapChanger.tculControlMode rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#TransformerControlMode.volt'/>\r\n";
+
+            if (tap.stepVoltageIncrement != null)
+                xml += "  <cim:RatioTapChanger.stepVoltageIncrement>" + DoubleToString(tap.stepVoltageIncrement.Value) + "</cim:RatioTapChanger.stepVoltageIncrement>\r\n";
+
+            xml += "</cim:RatioTapChanger>\r\n\r\n";
+
+            _writer.Write(xml);
+
+            /*
+              <cim:RatioTapChanger rdf:ID="_641b8688-b0bc-49c3-9a49-f129851deb4c">
+		<cim:IdentifiedObject.name>BE HVDC TR1</cim:IdentifiedObject.name>
+		<cim:TapChanger.neutralU>225.000000</cim:TapChanger.neutralU>
+		<cim:TapChanger.lowStep>1</cim:TapChanger.lowStep>
+		<cim:TapChanger.highStep>21</cim:TapChanger.highStep>
+		<cim:TapChanger.neutralStep>11</cim:TapChanger.neutralStep>
+		<cim:TapChanger.normalStep>7</cim:TapChanger.normalStep>
+		<cim:RatioTapChanger.stepVoltageIncrement>1.000000</cim:RatioTapChanger.stepVoltageIncrement>
+		<cim:TapChanger.ltcFlag>true</cim:TapChanger.ltcFlag>
+		<cim:TapChanger.TapChangerControl rdf:resource="#_87e1f736-bde8-499e-abf7-90b310825fb1"/>
+		<cim:RatioTapChanger.tculControlMode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#TransformerControlMode.volt"/>
+		<cim:RatioTapChanger.TransformerEnd rdf:resource="#_c9989583-d2c3-4d52-9f3b-7a98a8211fb6"/>
+		<cim:RatioTapChanger.RatioTapChangerTable rdf:resource="#_5350c2f2-d5f3-8a46-b181-ff619d3cec9d"/>
+		<entsoe:IdentifiedObject.shortName>BE HVDC TR1</entsoe:IdentifiedObject.shortName>
+		<cim:IdentifiedObject.description>BE HVDC TR1</cim:IdentifiedObject.description>
+		<cim:IdentifiedObject.mRID>641b8688-b0bc-49c3-9a49-f129851deb4c</cim:IdentifiedObject.mRID>
+		<entsoe:IdentifiedObject.energyIdentCodeEic>00X-BE-BE-000683</entsoe:IdentifiedObject.energyIdentCodeEic>
+	</cim:RatioTapChanger>
+    */
+        }
+
+
+
 
 
         private string GetBaseVoltageId(double voltageLevel)
@@ -339,6 +659,11 @@ namespace DAX.CIM.PFAdapter.CGMES
         private string DoubleToString(double value)
         {
             return value.ToString(CultureInfo.GetCultureInfo("en-GB"));
+        }
+
+        private double ConvertToEntsoeVoltage(double value)
+        {
+            return value / 1000;
         }
     }
 }

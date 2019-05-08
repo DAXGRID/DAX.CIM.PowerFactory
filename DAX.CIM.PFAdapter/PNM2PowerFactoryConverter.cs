@@ -29,7 +29,7 @@ namespace DAX.CIM.PFAdapter
 
             foreach (var preProcessor in _preProcessors)
             {
-                output = preProcessor.Transform(_context, input);
+                output = preProcessor.Transform(_context, input).ToList();
                 input = output;
             }
 

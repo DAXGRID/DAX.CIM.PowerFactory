@@ -37,7 +37,7 @@ namespace DAX.CIM.PFAdapter.Tests
         {
             using (var source = File.OpenRead(_jsonFilePath))
             {
-                var cson = new NRGi.Cson.CsonSerializer();
+                var cson = new DAX.Cson.CsonSerializer();
 
                 foreach (var identifiedObject in cson.DeserializeObjects(source))
                 {

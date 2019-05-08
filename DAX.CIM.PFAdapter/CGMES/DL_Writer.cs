@@ -24,14 +24,13 @@ namespace DAX.CIM.PFAdapter.CGMES
         string _startContent = @"<?xml version='1.0' encoding='UTF-8'?>
  <rdf:RDF xmlns:entsoe='http://entsoe.eu/CIM/SchemaExtension/3/1#' xmlns:cim='http://iec.ch/TC57/2013/CIM-schema-cim16#' xmlns:md='http://iec.ch/TC57/61970-552/ModelDescription/1#' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
   <md:FullModel rdf:about='urn:uuid:f096a1ff-281c-004f-3a89-9483fc7ab964'>
-    <md:Model.scenarioTime>2030-01-02T09:00:00.000</md:Model.scenarioTime>
-    <md:Model.created>2014-10-22T09:01:25.830</md:Model.created>
+    <md:Model.DependentOn rdf:resource='" + EQ_Writer._eqModelId.ToString() + @"' />
+    <md:Model.scenarioTime>" + EQ_Writer._timeStamp.ToString() + @"</md:Model.scenarioTime>
+    <md:Model.created>" + EQ_Writer._timeStamp.ToString() + @"</md:Model.created>
     <md:Model.modelingAuthoritySet>http://NRGi.dk/Planning/1</md:Model.modelingAuthoritySet>
-    <md:Model.description>DAX RDF Export</md:Model.description>
+    <md:Model.description>DAX Konstant PowerFactory Export</md:Model.description>
     <md:Model.version>4</md:Model.version>
     <md:Model.profile>http://entsoe.eu/CIM/GeographicalLocation/2/1</md:Model.profile>
-    <md:Model.DependentOn rdf:resource= 'urn:uuid:8168421c-c68f-3376-f16c-c2b7198bcb2e' />
-    <md:Model.Supersedes rdf:resource= 'urn:uuid:6fdb7290-de0d-11e2-8f45-b8f6b1180b6d' />
   </md:FullModel>
 
   <cim:CoordinateSystem rdf:ID= '_e4c22cb0-c8fc-11e1-bd6b-b8f6b1180b6d' >

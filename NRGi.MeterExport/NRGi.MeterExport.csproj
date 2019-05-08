@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6FACDCA1-ED2D-4B29-8EC1-C7947AE013CD}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{7C242108-3408-4B2A-A828-EE1F36992029}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DAX.CIM.PFAdapter</RootNamespace>
-    <AssemblyName>DAX.CIM.PFAdapter</AssemblyName>
+    <RootNamespace>NRGi.MeterExport</RootNamespace>
+    <AssemblyName>NRGi.MeterExport</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,8 +21,10 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -30,22 +33,20 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GeoAPI, Version=1.7.5.0, Culture=neutral, PublicKeyToken=a1a0da7def465678, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeoAPI.1.7.5-pre2\lib\net45\GeoAPI.dll</HintPath>
+    <Reference Include="FastMember, Version=1.0.0.9, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FastMember.1.1.0\lib\net40\FastMember.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NetTopologySuite, Version=1.14.0.0, Culture=neutral, PublicKeyToken=f580a05016ebada1, processorArchitecture=MSIL">
-      <HintPath>..\packages\NetTopologySuite.1.14\lib\net45\NetTopologySuite.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PowerCollections, Version=1.0.0.0, Culture=neutral, PublicKeyToken=2573bf8a1bdddcd5, processorArchitecture=MSIL">
-      <HintPath>..\packages\NetTopologySuite.1.14\lib\net45\PowerCollections.dll</HintPath>
+    <Reference Include="NRGi.Cson, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NRGi.Cson.0.1.0-beta07\lib\NET45\NRGi.Cson.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,33 +55,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Asset\AI_Writer.cs" />
-    <Compile Include="CGMES\DL_Writer.cs" />
-    <Compile Include="CGMES\EQ_Writer.cs" />
-    <Compile Include="PNM2PowerFactoryConverter.cs" />
-    <Compile Include="PreProcessors\BigEnergyConsumerHandler.cs" />
-    <Compile Include="PreProcessors\TransformerCableRemover.cs" />
-    <Compile Include="PreProcessors\MappingContext.cs" />
-    <Compile Include="PreProcessors\ACLSMerger.cs" />
-    <Compile Include="PreProcessors\GUIDHelper.cs" />
-    <Compile Include="PreProcessors\IPreProcessor.cs" />
-    <Compile Include="PreProcessors\PowerFactoryDataPrepare.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Protection\PE_Writer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel\DAX.CIM.PhysicalNetworkModel.csproj">
       <Project>{f8349941-a0f6-4d91-8dfe-998e778b1aee}</Project>
       <Name>DAX.CIM.PhysicalNetworkModel</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DAX.CoordinateConverter\DAX.CoordinateConverter.csproj">
-      <Project>{b4decf00-2963-44c1-9e7b-fa2ad65c5d05}</Project>
-      <Name>DAX.CoordinateConverter</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
