@@ -18,11 +18,9 @@ namespace NRGi.MeterExport
             var fileName = @"C:\temp\cim\complete_net.jsonl";
 
             //var fileName = @"C:\temp\cim\engum.jsonl";
-
             var cson = new NRGi.Cson.CsonSerializer();
 
             var cimContext = CimContext.Create(cson.DeserializeObjects(File.OpenRead(fileName)));
-
          
             foreach (var cimObj in cimContext.GetAllObjects())
             {
@@ -54,7 +52,6 @@ namespace NRGi.MeterExport
 
                             if (pt != null)
                             {
-
                                 // We don't want T and TRF, only the number
                                 string trafoNumber = pt.name.ToLower().Replace("trf", "").Replace("t", "");
                                 line = "\"" + ct.name + "\";" + st.name + "_0" + ciEquipment.BaseVoltage / 1000 + "_" + trafoNumber;
@@ -67,13 +64,8 @@ namespace NRGi.MeterExport
 
                         System.Diagnostics.Debug.WriteLine(line);
                     }
-
-                    
-
                 }
-
             }
-
         }
     }
 }

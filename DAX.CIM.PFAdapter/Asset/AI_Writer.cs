@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace DAX.CIM.PFAdapter.Asset
 {
@@ -75,10 +76,10 @@ namespace DAX.CIM.PFAdapter.Asset
             string xml = "<cim:Asset rdf:ID='_" + asset.mRID + "'>\r\n";
 
             if (asset.name != null)
-                xml += "  <cim:IdentifiedObject.name>" + asset.name + "</cim:IdentifiedObject.name>\r\n";
+                xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(asset.name) + "</cim:IdentifiedObject.name>\r\n";
 
             if (asset.type != null)
-                xml += "  <cim:Asset.type>" + asset.type + "</cim:Asset.type>\r\n";
+                xml += "  <cim:Asset.type>" + HttpUtility.HtmlEncode(asset.type) + "</cim:Asset.type>\r\n";
 
             xml += "  <cim:Asset.PowerSystemResources rdf:resource = '#_" + psrId + "'/>\r\n";
 
@@ -93,7 +94,7 @@ namespace DAX.CIM.PFAdapter.Asset
         public void AddPNMObject(PhysicalNetworkModel.Manufacturer manufacturer)
         {
             string xml = "<cim:Manufacturer rdf:ID='_" + manufacturer.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + manufacturer.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(manufacturer.name) + "</cim:IdentifiedObject.name>\r\n";
           
             xml += "</cim:Manufacturer>\r\n\r\n";
             _writer.Write(xml);
@@ -102,7 +103,7 @@ namespace DAX.CIM.PFAdapter.Asset
         public void AddPNMObject(PhysicalNetworkModel.ProductAssetModel model)
         {
             string xml = "<cim:ProductAssetModel rdf:ID='_" + model.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + model.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(model.name) + "</cim:IdentifiedObject.name>\r\n";
 
             if (model.Manufacturer != null)
                 xml += "  <cim:ProductAssetModel.Manufacturer rdf:resource = '#_" + model.Manufacturer.@ref + "'/>\r\n";

@@ -33,7 +33,11 @@ namespace DAX.CIM.PFAdapter.Tests
 
         protected override void SetUp()
         {
-            var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\hat_area_hsp_test.jsonl"));
+            //var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\hat_area_hsp_test.jsonl"));
+
+            var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_horsens.jsonl"));
+
+
             var cimObjects = reader.Read().ToList();
             _initialContext = CimContext.Create(cimObjects);
             Using(_initialContext);
@@ -55,7 +59,7 @@ namespace DAX.CIM.PFAdapter.Tests
             // slukke spole ved lokal trafo
             var spole1 = _initialContext.GetObject<PetersenCoil>("a9cfa63f-6df3-4c29-a9a2-0fde4960b3e5");
 
-            var testHvKunde = _initialContext.GetObject<EnergyConsumer>("a92ed975-ace5-4824-bccc-5ae8bc63fead");
+            //var testHvKunde = _initialContext.GetObject<EnergyConsumer>("a92ed975-ace5-4824-bccc-5ae8bc63fead");
 
             // linieadskiller som pludselig ikke har forbindelse mere
             var dis = _initialContext.GetObject<Disconnector>("adac6a70-f5fc-46ba-97ae-8c65e256a222");
@@ -64,8 +68,8 @@ namespace DAX.CIM.PFAdapter.Tests
 
             var filtered = FilterHelper.Filter(_initialContext, new FilterRule() {
                 MinVoltageLevel = 10000,
-                IncludeSpecificSubstations = new HashSet<string> { "HAT", "BYG", "KRL"},
-                IncludeSpecificLines = new HashSet<string> { "BYG-HAT", "HAT-KRL" }
+                //IncludeSpecificSubstations = new HashSet<string> { "HAT", "BYG", "KRL"},
+                //IncludeSpecificLines = new HashSet<string> { "BYG-HAT", "HAT-KRL" }
             });
 
             var mappingContext = new MappingContext();
@@ -84,7 +88,6 @@ namespace DAX.CIM.PFAdapter.Tests
 
             // Reinitialize cim context to converted objects
             var outputCimObjects = converter.GetCimObjects().ToList();
-
 
             // We need to reinitialize context, because converter has modified objects
             _context = CimContext.Create(outputCimObjects);
@@ -114,9 +117,7 @@ namespace DAX.CIM.PFAdapter.Tests
                 lineToGuid.Add(line, lineGuid);
 
                 //eqWriter.AddLine(lineGuid, line.Name);
-
             }
-            
 
             //////////////////////
             // do the general cim objects
@@ -172,9 +173,9 @@ namespace DAX.CIM.PFAdapter.Tests
 
 
             // Association: cim:Terminal.ConnectivityNode refers to object: _aa2161c0-1ab4-7756-833e-20b8f8f9afa3 which cannot be found in referenced models.
-            var pfCnError1 = _context.GetObject<IdentifiedObject>("aa2161c0-1ab4-7756-833e-20b8f8f9afa3");
-            var pfTerminalError1 = _context.GetObject<IdentifiedObject>("7f1f36be-efb2-4c54-8113-1e8df6cead78") as Terminal;
-            var pfTerminalError1Ce = _context.GetObject<IdentifiedObject>(pfTerminalError1.ConductingEquipment.@ref);
+            //var pfCnError1 = _context.GetObject<IdentifiedObject>("aa2161c0-1ab4-7756-833e-20b8f8f9afa3");
+            //var pfTerminalError1 = _context.GetObject<IdentifiedObject>("7f1f36be-efb2-4c54-8113-1e8df6cead78") as Terminal;
+            //var pfTerminalError1Ce = _context.GetObject<IdentifiedObject>(pfTerminalError1.ConductingEquipment.@ref);
 
             // Association: cim:ConnectivityNode.ConnectivityNodeContainer refers to object: _e4bd1ea6-1902-4fc7-9849-cf99341aa929 which cannot be found in referenced models.
             //var pfCnContainerError = _context.GetObject<IdentifiedObject>("e4bd1ea6-1902-4fc7-9849-cf99341aa929");
@@ -225,39 +226,7 @@ namespace DAX.CIM.PFAdapter.Tests
                     peWriter.AddPNMObject((dynamic)cimObject);
                 }
             }
-
-
-            /*
-
-            foreach (var cimObj in _context.GetAllObjects().Where(o => o is ACLineSegment))
-            {
-                var acls = cimObj as ACLineSegment;
-
-                if (acls.PSRType == "OverheadLine")
-                {
-                }
-
-                if (acls.mRID == "61d60dd0-5283-45cb-8511-1a948b33e862")
-                {
-                }
-
-                if (acls.Assets.@ref != null)
-                {
-                    var asset = _initialContext.GetObject<DAX.CIM.PhysicalNetworkModel.Asset>(acls.Assets.@ref);
-
-                    asset.name = acls.name + " " + asset.name;
-
-                    aiWriter.AddPNMObject(asset, acls.mRID);
-
-                    if (asset.AssetInfo != null)
-                    {
-                        var assetInfo = _initialContext.GetObject<DAX.CIM.PhysicalNetworkModel.AssetInfo>(asset.AssetInfo.@ref);
-
-                        aiWriter.AddPNMObject(assetInfo);
-                    }
-                }
-            }
-            */
+                       
 
             /*
             // Create line measurment asset
@@ -277,15 +246,14 @@ namespace DAX.CIM.PFAdapter.Tests
             asset2.AssetInfo = new AssetAssetInfo() { @ref = assetInfo2.mRID };
             aiWriter.AddPNMObject(asset2, lineToGuid.First(o => o.Key.Name == "BYG-HAT").Value);
             */
+
             eqWriter.Close();
             glWriter.Close();
             aiWriter.Close();
             peWriter.Close();
 
-            //File.Delete(aiTempFileName);
-
             string startPath = folder + "\\files";
-            string zipPath = folder + "\\konstant_byg_hat_krl_test.zip";
+            string zipPath = folder + "\\konstant_south_test.zip";
 
             File.Delete(zipPath);
 

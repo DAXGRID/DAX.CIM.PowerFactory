@@ -63,6 +63,21 @@ namespace DAX.CIM.PFAdapter
                 }
             }
 
+            foreach (var inputCimObject in input)
+            {
+                // Set busbar names to station + voltagelevel + bay
+                if (inputCimObject is BusbarSection)
+                {
+                    var bus = inputCimObject as BusbarSection;
+
+                    var vl = context.GetObject<VoltageLevel>(bus.EquipmentContainer.@ref);
+
+                    var st = bus.GetSubstation(true, context);
+
+                    bus.name = st.name + "_" + GetVoltageLevelStr(vl.BaseVoltage) + "_" + bus.name;
+                }
+            }
+
             // Fix and check objects
             foreach (var inputCimObject in input)
             {
@@ -119,7 +134,6 @@ namespace DAX.CIM.PFAdapter
 
                     pe.name = st.name + " " + bay.name;
                 }
-                              
 
                 // Tap changer
                 if (inputCimObject is RatioTapChanger)
@@ -244,6 +258,12 @@ namespace DAX.CIM.PFAdapter
                     }
                 }
 
+                // Remove trf from transformer name
+                if (inputCimObject is PowerTransformer)
+                {
+                    inputCimObject.name = inputCimObject.name.Replace("TRF", "");
+                }
+
                 // Ensure bay name is max 32 charaters
                 if (inputCimObject is Bay && inputCimObject.name != null && inputCimObject.name.Length > 32)
                 {
@@ -303,10 +323,12 @@ namespace DAX.CIM.PFAdapter
 
                             var voltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
 
+                            double voltageLevel = 400;
+
                             if (neighboords.Exists(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0))
                             {
 
-                                double voltageLevel = neighboords.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
+                                voltageLevel = neighboords.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
 
                                 var ptConnections = context.GetConnections(pt);
                                 var ptTerminal = ptConnections.First(c => c.ConnectivityNode == cn);
@@ -328,7 +350,13 @@ namespace DAX.CIM.PFAdapter
                                 }
                             }
 
-                            cn.name = pt.name;
+                            // Hvis trafo deler node med skinne, eller node er 400 volt, så brug jakob navngivning
+                            if (bus != null  || voltageLevel == 400)
+                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" +pt.name.Replace("TRF","");
+                            // ellers så brug gis/cim trafo navngivning (TRF..), for at undgå dublet i node navn
+                            else
+                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name;
+                
                         }
                         else if (bus != null && bus.name != null)
                             cn.name = bus.name;
@@ -352,6 +380,23 @@ namespace DAX.CIM.PFAdapter
                 yield return inputObj;
             }
 
+        }
+
+        private string GetVoltageLevelStr(double voltageLevel)
+        {
+            string vlStr = "";
+            if (voltageLevel == 400)
+                vlStr = "004";
+            else if (voltageLevel == 10000)
+                vlStr = "010";
+            else if (voltageLevel == 15000)
+                vlStr = "015";
+            else if (voltageLevel == 60000)
+                vlStr = "060";
+            else
+                throw new Exception("Don't know how to handle voltage level: " + voltageLevel);
+
+            return vlStr;
         }
     }
 }

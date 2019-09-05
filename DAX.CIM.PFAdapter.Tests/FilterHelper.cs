@@ -78,16 +78,15 @@ namespace DAX.CIM.PFAdapter.Tests
                             var eni = cimObject as ExternalNetworkInjection;
                             var neighbors = eni.GetNeighborConductingEquipments();
 
-                            if (neighbors.Exists(c => c.IsInsideSubstation() && rule.IncludeSpecificSubstations.Contains(c.GetSubstation().name)))
+                            if (neighbors.Exists(c => c.IsInsideSubstation() && (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(c.GetSubstation().name))))
                             {
-                                var ce = neighbors.First(c => c.IsInsideSubstation() && rule.IncludeSpecificSubstations.Contains(c.GetSubstation().name));
+                                var ce = neighbors.First(c => c.IsInsideSubstation() && (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(c.GetSubstation().name)));
                                 
                                 // put in inside substation
                                 eni.BaseVoltage = ce.BaseVoltage;
                                 eni.EquipmentContainer = new EquipmentEquipmentContainer() {  @ref = context.GetObject<Bay>(ce.EquipmentContainer.@ref).VoltageLevel.@ref };
                             }
                         }
-
 
                         // Tap changer
                         if (cimObject is RatioTapChanger)
@@ -128,7 +127,6 @@ namespace DAX.CIM.PFAdapter.Tests
                             var swBayName = ctSw.GetBay(true, context).name;
                             if (swBayName.ToLower().Contains("transformer"))
                                 continue;
-
                         }
 
 
@@ -140,33 +138,37 @@ namespace DAX.CIM.PFAdapter.Tests
                         {
 
                             // If part of substation, check if we should filter away
-                            if (partOfSt != null
-                                && rule.IncludeSpecificSubstations.Count > 1
-                                && !rule.IncludeSpecificSubstations.Contains(partOfSt.name))
+                            if (partOfSt != null && (rule.IncludeSpecificSubstations == null ||
+                                (rule.IncludeSpecificSubstations.Count > 1
+                                && !rule.IncludeSpecificSubstations.Contains(partOfSt.name))))
                             {
-                                bool skip = true;
-
-                                // Check if substation is feeded from included primary substation
-
-                                if (partOfSt.PSRType == "SecondarySubstation" && 
-                                    partOfSt.InternalFeeders != null &&
-                                    partOfSt.InternalFeeders.Count > 0 &&
-                                    partOfSt.InternalFeeders[0].ConnectionPoint != null &&
-                                    partOfSt.InternalFeeders[0].ConnectionPoint.Substation != null &&
-                                    partOfSt.InternalFeeders[0].ConnectionPoint.Substation.name != null)
+                                // Don't filter anything away, if not specific substations specified
+                                if (rule.IncludeSpecificSubstations != null)
                                 {
-                                    var feededStName = partOfSt.InternalFeeders[0].ConnectionPoint.Substation.name;
+                                    bool skip = true;
 
-                                    if (rule.IncludeSpecificSubstations.Contains(feededStName))
-                                        skip = false;
+                                    // Check if substation is feeded from included primary substation
+
+                                    if (partOfSt.PSRType == "SecondarySubstation" &&
+                                        partOfSt.InternalFeeders != null &&
+                                        partOfSt.InternalFeeders.Count > 0 &&
+                                        partOfSt.InternalFeeders[0].ConnectionPoint != null &&
+                                        partOfSt.InternalFeeders[0].ConnectionPoint.Substation != null &&
+                                        partOfSt.InternalFeeders[0].ConnectionPoint.Substation.name != null)
+                                    {
+                                        var feededStName = partOfSt.InternalFeeders[0].ConnectionPoint.Substation.name;
+
+                                        if (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(feededStName))
+                                            skip = false;
+                                    }
+
+                                    if (skip)
+                                        continue;
                                 }
-
-                                if (skip)
-                                    continue;
                             }
 
                             // If acls, check if we should filter away
-                            if (cimObject is ACLineSegment && rule.IncludeSpecificLines.Count > 1)
+                            if (cimObject is ACLineSegment && (rule.IncludeSpecificLines == null || rule.IncludeSpecificLines.Count > 1))
                             {
                                 bool continueToCheck = true;
                                 
@@ -179,7 +181,7 @@ namespace DAX.CIM.PFAdapter.Tests
                                 {
                                     var feededStName = aclsFeeders[0].ConnectionPoint.Substation.name;
 
-                                    if (rule.IncludeSpecificSubstations.Contains(feededStName))
+                                    if (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(feededStName))
                                         continueToCheck = false;
                                 }
 
@@ -189,7 +191,7 @@ namespace DAX.CIM.PFAdapter.Tests
                                     {
                                         var aclsSt = acls.GetSubstation(false, context);
 
-                                        if (!(aclsSt != null && rule.IncludeSpecificSubstations.Contains(aclsSt.name)))
+                                        if (!(aclsSt != null && (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(aclsSt.name))))
                                             continue;
                                     }
                                     else if (acls.name != null && acls.name.Contains("#"))
@@ -198,7 +200,7 @@ namespace DAX.CIM.PFAdapter.Tests
 
                                         var nameWithoutDelStr = nameSplit[0].ToUpper();
 
-                                        if (!rule.IncludeSpecificLines.Contains(nameWithoutDelStr))
+                                        if (rule.IncludeSpecificLines != null && !rule.IncludeSpecificLines.Contains(nameWithoutDelStr))
                                             continue;
                                     }
                                     else

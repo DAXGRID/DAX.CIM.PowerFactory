@@ -36,7 +36,7 @@ namespace DAX.CIM.PFAdapter.Protection
     <md:Model.created>" + EQ_Writer._timeStamp.ToString() + @"</md:Model.created>
     <md:Model.description>DAX Konstant PowerFactory Export</md:Model.description>
     <md:Model.version>1</md:Model.version>
-    <md:Model.profile>http://digsilent.de/CIM/Protection/1/3</md:Model.profile>
+    <md:Model.profile>http://konstant.dk/CIM/ProtectionExtension/1/1</md:Model.profile>
     <md:Model.modelingAuthoritySet>http://NRGi.dk/Planning/1</md:Model.modelingAuthoritySet>
   </md:FullModel>
 ";
