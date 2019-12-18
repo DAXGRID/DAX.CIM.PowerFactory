@@ -20,7 +20,8 @@ namespace DAX.CIM.PFAdapter.CGMES
     public class EQ_Writer
     {
         public static DateTime _timeStamp = DateTime.Now;
-        public static string _eqModelId = Guid.NewGuid().ToString();
+        public static string _eqModelId = "b8a2ec4d-8337-4a1c-9aec-32b8335435c0";
+        public static string _netName = "Konstant";
 
         public bool ForceThreePhases = false;
 
@@ -41,11 +42,11 @@ namespace DAX.CIM.PFAdapter.CGMES
   </md:FullModel>
 
   <cim:GeographicalRegion rdf:ID='_0472f5a6-c766-11e1-8775-005056c00008'>
-    <cim:IdentifiedObject.name>NRGi</cim:IdentifiedObject.name>
+    <cim:IdentifiedObject.name>" + _netName + @"</cim:IdentifiedObject.name>
   </cim:GeographicalRegion>
 
   <cim:SubGeographicalRegion rdf:ID='_0472a781-c766-11e1-8775-005056c00008'>
-    <cim:IdentifiedObject.name>NRGi</cim:IdentifiedObject.name>
+    <cim:IdentifiedObject.name>Konstant</cim:IdentifiedObject.name>
     <cim:SubGeographicalRegion.Region rdf:resource='#_0472f5a6-c766-11e1-8775-005056c00008' />
   </cim:SubGeographicalRegion>
  
@@ -78,15 +79,18 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         MappingContext _mappingContext;
 
-        public EQ_Writer(string fileName, CimContext cimContext, MappingContext mappingContext)
+        public EQ_Writer(string fileName, CimContext cimContext, MappingContext mappingContext, Guid modelId, string netName)
         {
             _fileName = fileName;
             _cimContext = cimContext;
             _mappingContext = mappingContext;
+            _eqModelId = modelId.ToString();
+            _netName = netName;
 
             _baseVoltageIdLookup.Add(400, "c6dd6dc7-d8b0-4beb-b78d-9e472b038ffc");
             _baseVoltageIdLookup.Add(10000, "c63f79cc-7953-4ab6-9fa6-f8c729bf895b");
             _baseVoltageIdLookup.Add(15000, "c1f24620-610b-41dd-bc75-7f14a7bad90f");
+            _baseVoltageIdLookup.Add(30000, "4eb4495e-ddff-4fd9-85d6-c09c2486ac9a");
             _baseVoltageIdLookup.Add(60000, "60ee59f3-5ed7-4551-b623-f4346554b22a");
 
             Open();
@@ -527,8 +531,9 @@ namespace DAX.CIM.PFAdapter.CGMES
             xml += "  <cim:TransformerEnd.Terminal rdf:resource='#_" + end.Terminal.@ref + "'/>\r\n";
             xml += "  <cim:PowerTransformerEnd.PowerTransformer rdf:resource = '#_" + end.PowerTransformer.@ref + "'/>\r\n";
 
-            var pt = _cimContext.GetObject<PhysicalNetworkModel.PotentialTransformer>(end.PowerTransformer.@ref);
+            var pt = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformer>(end.PowerTransformer.@ref);
 
+            /* HACK not needed anymore, information come from GIS now
             if (end.endNumber == "1")
             {
                 // Lokal trafoer
@@ -574,9 +579,18 @@ namespace DAX.CIM.PFAdapter.CGMES
                 if (end.phaseAngleClock != null)
                     xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
             }
+            */
 
+            if (end.phaseAngleClock != null)
+                xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
 
+            if (end.connectionKind != null)
+                xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection." + end.connectionKind + "'/>\r\n";
 
+            if (end.grounded)
+                xml += "  <cim:TransformerEnd.grounded>true</cim:TransformerEnd.grounded>\r\n";
+            else
+                xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
 
             if (end.b != null)
                 xml += "  <cim:PowerTransformerEnd.b>"+ end.b.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.b>\r\n";
@@ -606,7 +620,7 @@ namespace DAX.CIM.PFAdapter.CGMES
                 xml += "  <cim:PowerTransformerEnd.ratedU>" + (end.ratedU.Value / 1000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedU>\r\n";
 
             if (end.ratedS != null)
-                xml += "  <cim:PowerTransformerEnd.ratedS>" + (end.ratedS.Value / 1000000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedS>\r\n";
+                xml += "  <cim:PowerTransformerEnd.ratedS>" + (end.ratedS.Value / 1000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedS>\r\n";
 
 
             xml += "</cim:PowerTransformerEnd>\r\n\r\n";
@@ -640,8 +654,12 @@ namespace DAX.CIM.PFAdapter.CGMES
             xml += "  <cim:TapChanger.TapChangerControl rdf:resource='#_" + controlMrid.ToString() + "'/>\r\n";
 
             xml += "  <cim:IdentifiedObject.name>TAP</cim:IdentifiedObject.name>\r\n";
-            xml += "  <cim:TapChanger.neutralU>" + DoubleToString(tap.neutralU.Value / 1000) + "</cim:TapChanger.neutralU>\r\n";
-            xml += "  <cim:TapChanger.neutralStep>" + tap.neutralStep + "</cim:TapChanger.neutralStep>\r\n";
+
+            if (tap.neutralU != null)
+                xml += "  <cim:TapChanger.neutralU>" + DoubleToString(tap.neutralU.Value / 1000) + "</cim:TapChanger.neutralU>\r\n";
+
+            if (tap.neutralStep != null)
+                xml += "  <cim:TapChanger.neutralStep>" + tap.neutralStep + "</cim:TapChanger.neutralStep>\r\n";
 
             if (tap.normalStep != null && tap.normalStep != "")
                 xml += "  <cim:TapChanger.normalStep>" + tap.normalStep + "</cim:TapChanger.normalStep>\r\n";
@@ -658,72 +676,22 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             _writer.Write(xml);
 
-            // Create regulating control
+            // Create regulating control if automatic
+            if (tap.ltcFlag)
+            {
 
-            var ptEnd = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformerEnd>(tap.TransformerEnd.@ref);
+                var ptEnd = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformerEnd>(tap.TransformerEnd.@ref);
 
-            xml = "<cim:TapChangerControl rdf:ID = '_" + controlMrid.ToString() + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>Tab Controler</cim:IdentifiedObject.name>\r\n";
-            xml += "  <cim:RegulatingControl.mode rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage' />\r\n";
-            xml += "  <cim:RegulatingControl.Terminal rdf:resource='#_" + ptEnd.Terminal.@ref + "'/>\r\n";
+                xml = "<cim:TapChangerControl rdf:ID = '_" + controlMrid.ToString() + "'>\r\n";
+                xml += "  <cim:IdentifiedObject.name>Tab Controler</cim:IdentifiedObject.name>\r\n";
+                xml += "  <cim:RegulatingControl.mode rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage' />\r\n";
+                xml += "  <cim:RegulatingControl.Terminal rdf:resource='#_" + ptEnd.Terminal.@ref + "'/>\r\n";
 
-            xml += "</cim:TapChangerControl>\r\n\r\n";
+                xml += "</cim:TapChangerControl>\r\n\r\n";
+            }
 
             _writer.Write(HttpUtility.HtmlEncode(xml));
-
-            /*
-             
-             <cim:RatioTapChanger rdf:ID="_ea30d949-5424-4ef5-a605-b970a1e00490">
-    <cim:IdentifiedObject.name>2-Winding Transformer</cim:IdentifiedObject.name>
-    <cim:RatioTapChanger.TransformerEnd rdf:resource="#_6185aa22-2acf-4f5b-92f6-2df967360654" />
-    <cim:RatioTapChanger.stepVoltageIncrement>0.5</cim:RatioTapChanger.stepVoltageIncrement>
-    <cim:RatioTapChanger.tculControlMode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#TransformerControlMode.volt" />
-    <cim:TapChanger.TapChangerControl rdf:resource="#_f824f044-3c49-4dd4-b210-3669b64c1319" />
-    <cim:TapChanger.highStep>19</cim:TapChanger.highStep>
-    <cim:TapChanger.lowStep>1</cim:TapChanger.lowStep>
-    <cim:TapChanger.ltcFlag>false</cim:TapChanger.ltcFlag>
-    <cim:TapChanger.neutralStep>10</cim:TapChanger.neutralStep>
-    <cim:TapChanger.neutralU>110.</cim:TapChanger.neutralU>
-    <cim:TapChanger.normalStep>10</cim:TapChanger.normalStep>
-  </cim:RatioTapChanger>
-
-              <cim:TapChangerControl rdf:ID="_f824f044-3c49-4dd4-b210-3669b64c1319">
-    <cim:IdentifiedObject.name>2-Winding Transformer</cim:IdentifiedObject.name>
-    <cim:RegulatingControl.Terminal rdf:resource="#_731d0d44-a65e-4cc5-99b2-f4ea4c49536d" />
-    <cim:RegulatingControl.mode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage" />
-  </cim:TapChangerControl>
-
-  <cim:RegulatingControl rdf:ID="_a926d11d-1e7d-4b42-b510-614df2785eb8">
-    <cim:IdentifiedObject.name>External Grid</cim:IdentifiedObject.name>
-    <cim:RegulatingControl.Terminal rdf:resource="#_1631de47-e04b-4f28-a849-599b6ab31a01" />
-    <cim:RegulatingControl.mode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage" />
-  </cim:RegulatingControl> 
-              
-              
-              <cim:RatioTapChanger rdf:ID="_641b8688-b0bc-49c3-9a49-f129851deb4c">
-		<cim:IdentifiedObject.name>BE HVDC TR1</cim:IdentifiedObject.name>
-		<cim:TapChanger.neutralU>225.000000</cim:TapChanger.neutralU>
-		<cim:TapChanger.lowStep>1</cim:TapChanger.lowStep>
-		<cim:TapChanger.highStep>21</cim:TapChanger.highStep>
-		<cim:TapChanger.neutralStep>11</cim:TapChanger.neutralStep>
-		<cim:TapChanger.normalStep>7</cim:TapChanger.normalStep>
-		<cim:RatioTapChanger.stepVoltageIncrement>1.000000</cim:RatioTapChanger.stepVoltageIncrement>
-		<cim:TapChanger.ltcFlag>true</cim:TapChanger.ltcFlag>
-		<cim:TapChanger.TapChangerControl rdf:resource="#_87e1f736-bde8-499e-abf7-90b310825fb1"/>
-		<cim:RatioTapChanger.tculControlMode rdf:resource="http://iec.ch/TC57/2013/CIM-schema-cim16#TransformerControlMode.volt"/>
-		<cim:RatioTapChanger.TransformerEnd rdf:resource="#_c9989583-d2c3-4d52-9f3b-7a98a8211fb6"/>
-		<cim:RatioTapChanger.RatioTapChangerTable rdf:resource="#_5350c2f2-d5f3-8a46-b181-ff619d3cec9d"/>
-		<entsoe:IdentifiedObject.shortName>BE HVDC TR1</entsoe:IdentifiedObject.shortName>
-		<cim:IdentifiedObject.description>BE HVDC TR1</cim:IdentifiedObject.description>
-		<cim:IdentifiedObject.mRID>641b8688-b0bc-49c3-9a49-f129851deb4c</cim:IdentifiedObject.mRID>
-		<entsoe:IdentifiedObject.energyIdentCodeEic>00X-BE-BE-000683</entsoe:IdentifiedObject.energyIdentCodeEic>
-	</cim:RatioTapChanger>
-    */
         }
-
-
-
-
 
         private string GetBaseVoltageId(double voltageLevel)
         {
@@ -732,7 +700,6 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             return _baseVoltageIdLookup[voltageLevel];
         }
-
 
         private string DoubleToString(double value)
         {

@@ -36,6 +36,7 @@ namespace DAX.CIM.PFAdapter.Tests
                     || !(cimObject is PhysicalNetworkModel.ConductingEquipment) 
                     || cimObject is PhysicalNetworkModel.PowerTransformer
                     || cimObject is PhysicalNetworkModel.ExternalNetworkInjection
+                    || (cimObject is EnergyConsumer && ((PowerSystemResource)cimObject).PSRType == "Aftagepunkt_fællesmaaling")
                     )
                 {
 
@@ -97,9 +98,6 @@ namespace DAX.CIM.PFAdapter.Tests
                                 continue;
 
                             var ptEnd = context.GetObject<PowerTransformerEnd>(tap.TransformerEnd.@ref);
-
-                            if (ptEnd.ratedU.Value < 50000)
-                                continue;
                         }
 
 
@@ -113,20 +111,25 @@ namespace DAX.CIM.PFAdapter.Tests
                                 continue;
 
                             var swTerminal = context.GetObject<Terminal>(aux.Terminal.@ref);
-                            var ctSw = context.GetObject<Switch>(swTerminal.ConductingEquipment.@ref);
-                                                        
+                            var ctObj = context.GetObject<IdentifiedObject>(swTerminal.ConductingEquipment.@ref);
+
+                            if (ctObj is Switch)
+                            {
+                                Switch ctSw = ctObj as Switch;
+
                             // If not connedted to breaker, then skip
-                            if (!(ctSw is Breaker))
-                                continue;
+                                if (!(ctSw is Breaker))
+                                    continue;
 
-                            // if not 60000 volt, then skip
-                            if (ctSw.BaseVoltage != 60000)
-                                continue;
+                                // if not 60000 volt, then skip
+                                if (ctSw.BaseVoltage != 60000)
+                                    continue;
 
-                            // If bay name contains transformer, skup
-                            var swBayName = ctSw.GetBay(true, context).name;
-                            if (swBayName.ToLower().Contains("transformer"))
-                                continue;
+                                // If bay name contains transformer, skup
+                                var swBayName = ctSw.GetBay(true, context).name;
+                                if (swBayName.ToLower().Contains("transformer"))
+                                    continue;
+                            }
                         }
 
 
@@ -134,8 +137,46 @@ namespace DAX.CIM.PFAdapter.Tests
                         if (!(cimObject is ConductingEquipment)
                             || rule.MinVoltageLevel == 0
                             || ((ConductingEquipment)cimObject).BaseVoltage == 0
-                            || ((ConductingEquipment)cimObject).BaseVoltage >= rule.MinVoltageLevel)
+                            || ((ConductingEquipment)cimObject).BaseVoltage >= rule.MinVoltageLevel
+                            || (cimObject is EnergyConsumer && ((PowerSystemResource)cimObject).PSRType == "Aftagepunkt_fællesmaaling"))
                         {
+                            // Add high voltage measured customer, even if lv modelled
+                            if (cimObject is EnergyConsumer && ((EnergyConsumer)cimObject).PSRType == "Aftagepunkt_fællesmaaling" && ((EnergyConsumer)cimObject).BaseVoltage == 400)
+                            {
+                                var ec = cimObject as EnergyConsumer;
+
+                                var ecAclsNeighbors = context.GetNeighborConductingEquipments(ec).Where(c => c is ACLineSegment).ToList();
+
+                                if (ecAclsNeighbors.Count == 1)
+                                {
+                                    var ecTerminal = context.GetConnections(ec)[0].Terminal;
+
+                                    var aclsTrafoConnections = context.GetNeighborConductingEquipments(ecAclsNeighbors[0]).Where(c => c is PowerTransformer).ToList();
+
+                                    if (aclsTrafoConnections.Count == 1)
+                                    {
+                                        var trafo = aclsTrafoConnections[0];
+                                        var trafoCn = context.GetConnections(trafo).Where(c => c.Terminal.sequenceNumber == "2").ToList();
+
+                                        if (trafoCn.Count == 1)
+                                        {
+                                            var trafoTerminal2 = trafoCn[0].Terminal;
+                                            var trafoTerminal2Cn = trafoCn[0].ConnectivityNode;
+
+                                            context.ConnectTerminalToAnotherConnectitityNode(ecTerminal, trafoTerminal2Cn);
+
+                                            ec.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = trafo.EquipmentContainer.@ref };
+
+                                        }
+
+                                    }
+                                }
+                                else if (ecAclsNeighbors.Count > 1)
+                                {
+                                    System.Diagnostics.Debug.WriteLine("Cannot convert: " + ec.name + " multiply cables connected to customer. Must be modelled in PF.");
+                                }
+                            }
+
 
                             // If part of substation, check if we should filter away
                             if (partOfSt != null && (rule.IncludeSpecificSubstations == null ||
@@ -179,10 +220,15 @@ namespace DAX.CIM.PFAdapter.Tests
 
                                 if (aclsFeeders != null && aclsFeeders.Count > 0)
                                 {
-                                    var feededStName = aclsFeeders[0].ConnectionPoint.Substation.name;
-
-                                    if (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(feededStName))
+                                    if (rule.IncludeSpecificSubstations == null)
                                         continueToCheck = false;
+                                    else
+                                    {
+                                        var feededStName = aclsFeeders[0].ConnectionPoint.Substation.name;
+
+                                        if (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(feededStName))
+                                            continueToCheck = false;
+                                    }
                                 }
 
                                 if (continueToCheck)
@@ -228,6 +274,7 @@ namespace DAX.CIM.PFAdapter.Tests
                             if (cimObject is ConductingEquipment)
                             {
                                 var ci = cimObject as PhysicalNetworkModel.ConductingEquipment;
+
                                 foreach (var tc in context.GetConnections(ci))
                                 {
                                     string stName = "";

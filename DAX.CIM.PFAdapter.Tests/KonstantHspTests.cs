@@ -34,19 +34,26 @@ namespace DAX.CIM.PFAdapter.Tests
         protected override void SetUp()
         {
             //var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\hat_area_hsp_test.jsonl"));
-
+            /*
             var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_horsens.jsonl"));
-
-
+            
             var cimObjects = reader.Read().ToList();
             _initialContext = CimContext.Create(cimObjects);
             Using(_initialContext);
+            */
         }
 
         [TestMethod]
         public void TestHatBygKrlArea()
         {
             Dictionary<string, string> assetToEqRefs = new Dictionary<string, string>();
+
+            folder = @"\\SHOBJPOW01V\c$\DAX\export\hat_byg_krl";
+
+            eqTempFileName = folder + @"\files\hat_byg_krl_eq.xml";
+            glTempFileName = folder + @"\files\hat_byg_krl_gl.xml";
+            aiTempFileName = folder + @"\files\hat_byg_krl_ai.xml";
+            peTempFileName = folder + @"\files\hat_byg_krl_pe.xml";
 
             // luftledning without connections
             var luft_dis = _initialContext.GetObject<ACLineSegment>("c599e9a1-189b-4ebd-ba03-ac9aa14ffb1f");
@@ -68,8 +75,8 @@ namespace DAX.CIM.PFAdapter.Tests
 
             var filtered = FilterHelper.Filter(_initialContext, new FilterRule() {
                 MinVoltageLevel = 10000,
-                //IncludeSpecificSubstations = new HashSet<string> { "HAT", "BYG", "KRL"},
-                //IncludeSpecificLines = new HashSet<string> { "BYG-HAT", "HAT-KRL" }
+                IncludeSpecificSubstations = new HashSet<string> { "HAT", "BYG", "KRL"},
+                IncludeSpecificLines = new HashSet<string> { "BYG-HAT", "HAT-KRL" }
             });
 
             var mappingContext = new MappingContext();
@@ -82,8 +89,8 @@ namespace DAX.CIM.PFAdapter.Tests
                new List<IPreProcessor> {
                     new ACLSMerger(mappingContext),
                     new TransformerCableMerger(mappingContext),
-                    new BigEnergyConsumerHandler(mappingContext),
-                    new PowerFactoryDataPrepareAndFix(mappingContext)
+                    new KonstantBigEnergyConsumerHandler(mappingContext),
+                    new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
                });
 
             // Reinitialize cim context to converted objects
@@ -92,11 +99,7 @@ namespace DAX.CIM.PFAdapter.Tests
             // We need to reinitialize context, because converter has modified objects
             _context = CimContext.Create(outputCimObjects);
 
-            var ec = _context.GetObject<EnergyConsumer>("8f5f0b7b-9699-4ab1-97b2-276f273e172c");
-            var ecCons = _context.GetConnections(ec);
-
-
-            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext);
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.NewGuid(),"HAT_BYG_KRL");
             eqWriter.ForceThreePhases = true;
 
             var glWriter = new GL_Writer(glTempFileName);
@@ -150,7 +153,13 @@ namespace DAX.CIM.PFAdapter.Tests
                             (cimObject is PhysicalNetworkModel.Manufacturer) ||
                             (cimObject is CurrentTransformerExt) ||
                             (cimObject is PotentialTransformer) ||
-                            (cimObject is ProtectionEquipmentExt) 
+                            (cimObject is ProtectionEquipmentExt) ||
+                            (cimObject is CoordinateSystem) ||
+                            (cimObject is SynchronousMachine) ||
+                            (cimObject is AsynchronousMachine) ||
+                            (cimObject is ExternalNetworkInjection) ||
+                            (cimObject is FaultIndicator) ||
+                            (cimObject is UsagePoint)
                             ))
                         eqWriter.AddPNMObject((dynamic)cimObject);
                     }
@@ -169,21 +178,205 @@ namespace DAX.CIM.PFAdapter.Tests
                         assetToEqRefs.Add(psrObj.Assets.@ref, psrObj.mRID);
                 }
             }
+      
+            //////////////////////
+            // do the asset object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.Asset)
+                {
+                    if (assetToEqRefs.ContainsKey(cimObject.mRID))
+                    {
+                        var eqMrid = assetToEqRefs[cimObject.mRID];
+                        aiWriter.AddPNMObject((dynamic)cimObject, eqMrid);
+                    }
+                }
+
+                if (cimObject is PhysicalNetworkModel.AssetInfo)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.ProductAssetModel)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.Manufacturer)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+            }
+
+            //////////////////////
+            // do the projection object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.ProtectionEquipment)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.PotentialTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.CurrentTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+            }
+       
+            eqWriter.Close();
+            glWriter.Close();
+            aiWriter.Close();
+            peWriter.Close();
+
+            string startPath = folder + "\\files";
+            string zipPath = folder + "\\hat_byg_krl.zip";
+
+            File.Delete(zipPath);
+
+            ZipFile.CreateFromDirectory(startPath, zipPath);
+
+        }
+
+        [TestMethod]
+        public void TestSouthArea()
+        {
+
+            var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_syd.jsonl"));
+
+            var cimObjects = reader.Read().ToList();
+            _initialContext = CimContext.Create(cimObjects);
+            Using(_initialContext);
+
+            folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_syd";
+
+            eqTempFileName = folder + @"\files\konstant_south_eq.xml";
+            glTempFileName = folder + @"\files\konstant_south_gl.xml";
+            aiTempFileName = folder + @"\files\konstant_south_ai.xml";
+            peTempFileName = folder + @"\files\konstant_south_pe.xml";
 
 
+            Dictionary<string, string> assetToEqRefs = new Dictionary<string, string>();
 
-            // Association: cim:Terminal.ConnectivityNode refers to object: _aa2161c0-1ab4-7756-833e-20b8f8f9afa3 which cannot be found in referenced models.
-            //var pfCnError1 = _context.GetObject<IdentifiedObject>("aa2161c0-1ab4-7756-833e-20b8f8f9afa3");
-            //var pfTerminalError1 = _context.GetObject<IdentifiedObject>("7f1f36be-efb2-4c54-8113-1e8df6cead78") as Terminal;
-            //var pfTerminalError1Ce = _context.GetObject<IdentifiedObject>(pfTerminalError1.ConductingEquipment.@ref);
+            // luftledning without connections
+            var luft_dis = _initialContext.GetObject<ACLineSegment>("c599e9a1-189b-4ebd-ba03-ac9aa14ffb1f");
+            var luft_dis_neighbors = luft_dis.GetNeighborConductingEquipments();
 
-            // Association: cim:ConnectivityNode.ConnectivityNodeContainer refers to object: _e4bd1ea6-1902-4fc7-9849-cf99341aa929 which cannot be found in referenced models.
-            //var pfCnContainerError = _context.GetObject<IdentifiedObject>("e4bd1ea6-1902-4fc7-9849-cf99341aa929");
+            // cable with 1 phase
+            var luft_1phase = _initialContext.GetObject<ACLineSegment>("76c96252-b533-44b1-aac2-9efb184dc9e7");
+            var luft_1phase_terminals = _initialContext.GetConnections(luft_1phase);
 
-            // _43ad242e-30e2-7049-bd2a-696a3f850578
+            // slukke spole ved lokal trafo
+            var spole1 = _initialContext.GetObject<PetersenCoil>("a9cfa63f-6df3-4c29-a9a2-0fde4960b3e5");
+
+            //var testHvKunde = _initialContext.GetObject<EnergyConsumer>("a92ed975-ace5-4824-bccc-5ae8bc63fead");
+
+            // linieadskiller som pludselig ikke har forbindelse mere
+            var dis = _initialContext.GetObject<Disconnector>("adac6a70-f5fc-46ba-97ae-8c65e256a222");
+            var disTest = _initialContext.GetNeighborConductingEquipments(dis);
 
 
-            // Write acls asset to asset file
+            var filtered = FilterHelper.Filter(_initialContext, new FilterRule()
+            {
+                MinVoltageLevel = 10000,
+           });
+
+            var mappingContext = new MappingContext();
+
+            // Reinitialize cim context to filtered objects
+            CimContext _context = CimContext.Create(filtered);
+
+
+            var converter = new PNM2PowerFactoryConverter(filtered,
+               new List<IPreProcessor> {
+                    new ACLSMerger(mappingContext),
+                    new TransformerCableMerger(mappingContext),
+                    new KonstantBigEnergyConsumerHandler(mappingContext),
+                    new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
+               });
+
+            // Reinitialize cim context to converted objects
+            var outputCimObjects = converter.GetCimObjects().ToList();
+
+       
+            // We need to reinitialize context, because converter has modified objects
+            _context = CimContext.Create(outputCimObjects);
+
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.Parse("b8a2ec4d-8337-4a1c-9aec-32b8335435c0"), "Konstant syd");
+            eqWriter.ForceThreePhases = true;
+
+            var glWriter = new GL_Writer(glTempFileName);
+            var aiWriter = new AI_Writer(aiTempFileName, _context, mappingContext);
+            var peWriter = new PE_Writer(peTempFileName, _context, mappingContext);
+
+
+            //////////////////////
+            // do the lines
+            var lineContext = new LineInfoContext(_context);
+            //lineContext.CreateLineInfo();
+            Dictionary<SimpleLine, string> lineToGuid = new Dictionary<SimpleLine, string>();
+
+
+            foreach (var line in lineContext.GetLines())
+            {
+                var lineGuid = GUIDHelper.CreateDerivedGuid(Guid.Parse(line.Children[0].Equipment.mRID), 678, true).ToString();
+                lineToGuid.Add(line, lineGuid);
+
+                //eqWriter.AddLine(lineGuid, line.Name);
+            }
+
+            //////////////////////
+            // do the general cim objects
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject.name != null && cimObject.name.Contains("571313124501006982"))
+                {
+
+                }
+
+                if (!(cimObject is Location) && !(cimObject is VoltageLevel && ((VoltageLevel)cimObject).BaseVoltage < 400))
+                {
+                    if (cimObject is ACLineSegment)
+                    {
+                        var acls = cimObject as ACLineSegment;
+
+                        var lines = lineContext.GetLines().Where(l => l.Children.Exists(c => c.Equipment == acls)).ToList();
+
+                        if (lines.Count == 1)
+                        {
+                            var line = lines[0];
+                            eqWriter.AddPNMObject(acls, lineToGuid[line]);
+                        }
+                        else
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+
+                    }
+                    else
+                    {
+                        // Don't add things that goes into asset and protectionn file
+                        if (!(
+                            (cimObject is PhysicalNetworkModel.Asset) ||
+                            (cimObject is PhysicalNetworkModel.AssetInfo) ||
+                            (cimObject is PhysicalNetworkModel.ProductAssetModel) ||
+                            (cimObject is PhysicalNetworkModel.Manufacturer) ||
+                            (cimObject is CurrentTransformerExt) ||
+                            (cimObject is PotentialTransformer) ||
+                            (cimObject is ProtectionEquipmentExt)
+                            ))
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+                    }
+                }
+
+                if (cimObject is PowerSystemResource)
+                {
+                    var psrObj = cimObject as PowerSystemResource;
+
+                    if (psrObj.Location != null && psrObj.Location.@ref != null)
+                    {
+                        var loc = _context.GetObject<PhysicalNetworkModel.LocationExt>(psrObj.Location.@ref);
+                        glWriter.AddLocation(Guid.Parse(psrObj.mRID), loc);
+                    }
+                    if (psrObj.Assets != null && psrObj.Assets.@ref != null)
+                        assetToEqRefs.Add(psrObj.Assets.@ref, psrObj.mRID);
+                }
+            }
 
             //////////////////////
             // do the asset object
@@ -226,26 +419,6 @@ namespace DAX.CIM.PFAdapter.Tests
                     peWriter.AddPNMObject((dynamic)cimObject);
                 }
             }
-                       
-
-            /*
-            // Create line measurment asset
-            var assetInfo2 = new PhysicalNetworkModel.CableInfoExt();
-            assetInfo2.mRID = Guid.NewGuid().ToString();
-            assetInfo2.name = "BYG-HAT measured line test data";
-            assetInfo2.x = new Reactance() { Value = 0.247};
-            assetInfo2.x0 = new Reactance() { Value = 2.563};
-            assetInfo2.r = new Resistance() { Value = 0.131};
-            assetInfo2.r0 = new Resistance() { Value = 0.684 };
-            aiWriter.AddPNMObject(assetInfo2);
-
-            var asset2 = new PhysicalNetworkModel.Asset();
-            asset2.mRID = Guid.NewGuid().ToString();
-            asset2.name = "BYG-HAT measured line test data";
-            asset2.type = "Measured line";
-            asset2.AssetInfo = new AssetAssetInfo() { @ref = assetInfo2.mRID };
-            aiWriter.AddPNMObject(asset2, lineToGuid.First(o => o.Key.Name == "BYG-HAT").Value);
-            */
 
             eqWriter.Close();
             glWriter.Close();
@@ -254,6 +427,355 @@ namespace DAX.CIM.PFAdapter.Tests
 
             string startPath = folder + "\\files";
             string zipPath = folder + "\\konstant_south_test.zip";
+
+            File.Delete(zipPath);
+
+            ZipFile.CreateFromDirectory(startPath, zipPath);
+
+        }
+
+        [TestMethod]
+        public void TestNorthArea()
+        {
+            var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_nord.jsonl"));
+
+            var cimObjects = reader.Read().ToList();
+            _initialContext = CimContext.Create(cimObjects);
+            Using(_initialContext);
+
+            folder = @"\\SHOBJPOW01V\c$\DAX\export\konstant_nord";
+
+            eqTempFileName = folder + @"\files\konstant_nord_eq.xml";
+            glTempFileName = folder + @"\files\konstant_nord_gl.xml";
+            aiTempFileName = folder + @"\files\konstant_nord_ai.xml";
+            peTempFileName = folder + @"\files\konstant_nord_pe.xml";
+
+            Dictionary<string, string> assetToEqRefs = new Dictionary<string, string>();
+
+            var filtered = FilterHelper.Filter(_initialContext, new FilterRule()
+            {
+                MinVoltageLevel = 10000,
+            });
+
+            var mappingContext = new MappingContext();
+
+            // Reinitialize cim context to filtered objects
+            CimContext _context = CimContext.Create(filtered);
+
+
+            var converter = new PNM2PowerFactoryConverter(filtered,
+               new List<IPreProcessor> {
+                    new ACLSMerger(mappingContext),
+                    new TransformerCableMerger(mappingContext),
+                    new KonstantBigEnergyConsumerHandler(mappingContext),
+                    new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
+               });
+
+            // Reinitialize cim context to converted objects
+            var outputCimObjects = converter.GetCimObjects().ToList();
+
+            // We need to reinitialize context, because converter has modified objects
+            _context = CimContext.Create(outputCimObjects);
+
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.Parse("fb889063-c976-4b25-9ae2-4edea3ebe0ad"), "Konstant nord");
+            eqWriter.ForceThreePhases = true;
+
+            var glWriter = new GL_Writer(glTempFileName);
+            var aiWriter = new AI_Writer(aiTempFileName, _context, mappingContext);
+            var peWriter = new PE_Writer(peTempFileName, _context, mappingContext);
+
+            //////////////////////
+            // do the lines
+            var lineContext = new LineInfoContext(_context);
+            //lineContext.CreateLineInfo();
+            Dictionary<SimpleLine, string> lineToGuid = new Dictionary<SimpleLine, string>();
+
+
+            foreach (var line in lineContext.GetLines())
+            {
+                var lineGuid = GUIDHelper.CreateDerivedGuid(Guid.Parse(line.Children[0].Equipment.mRID), 678, true).ToString();
+                lineToGuid.Add(line, lineGuid);
+
+                //eqWriter.AddLine(lineGuid, line.Name);
+            }
+
+            //////////////////////
+            // do the general cim objects
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (!(cimObject is Location) && !(cimObject is VoltageLevel && ((VoltageLevel)cimObject).BaseVoltage < 400))
+                {
+                    if (cimObject is ACLineSegment)
+                    {
+                        var acls = cimObject as ACLineSegment;
+
+                        var lines = lineContext.GetLines().Where(l => l.Children.Exists(c => c.Equipment == acls)).ToList();
+
+                        if (lines.Count == 1)
+                        {
+                            var line = lines[0];
+                            eqWriter.AddPNMObject(acls, lineToGuid[line]);
+                        }
+                        else
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+
+                    }
+                    else
+                    {
+                        // Don't add things that goes into asset and protectionn file
+                        if (!(
+                            (cimObject is PhysicalNetworkModel.Asset) ||
+                            (cimObject is PhysicalNetworkModel.AssetInfo) ||
+                            (cimObject is PhysicalNetworkModel.ProductAssetModel) ||
+                            (cimObject is PhysicalNetworkModel.Manufacturer) ||
+                            (cimObject is CurrentTransformerExt) ||
+                            (cimObject is PotentialTransformer) ||
+                            (cimObject is ProtectionEquipmentExt)
+                            ))
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+                    }
+                }
+
+                if (cimObject is PowerSystemResource)
+                {
+                    var psrObj = cimObject as PowerSystemResource;
+
+                    if (psrObj.Location != null && psrObj.Location.@ref != null)
+                    {
+                        try
+                        {
+                            var loc = _context.GetObject<PhysicalNetworkModel.LocationExt>(psrObj.Location.@ref);
+                            glWriter.AddLocation(Guid.Parse(psrObj.mRID), loc);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Can't find location: " + psrObj.Location.@ref + " on obj: " + psrObj.ToString());
+                        }
+                    }
+                    if (psrObj.Assets != null && psrObj.Assets.@ref != null)
+                        assetToEqRefs.Add(psrObj.Assets.@ref, psrObj.mRID);
+                }
+            }
+
+            //////////////////////
+            // do the asset object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.Asset)
+                {
+                    if (assetToEqRefs.ContainsKey(cimObject.mRID))
+                    {
+                        var eqMrid = assetToEqRefs[cimObject.mRID];
+                        aiWriter.AddPNMObject((dynamic)cimObject, eqMrid);
+                    }
+                }
+
+                if (cimObject is PhysicalNetworkModel.AssetInfo)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.ProductAssetModel)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.Manufacturer)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+            }
+
+            //////////////////////
+            // do the projection object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.ProtectionEquipment)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.PotentialTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.CurrentTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+            }
+
+            eqWriter.Close();
+            glWriter.Close();
+            aiWriter.Close();
+            peWriter.Close();
+
+            string startPath = folder + "\\files";
+            string zipPath = folder + "\\konstant_north_test.zip";
+
+            File.Delete(zipPath);
+
+            ZipFile.CreateFromDirectory(startPath, zipPath);
+
+        }
+
+        [TestMethod]
+        public void TestCompleteNet()
+        {
+            Dictionary<string, string> assetToEqRefs = new Dictionary<string, string>();
+
+            folder = @"\\SHOBJPOW01V\c$\DAX\export\konstant_komplet";
+
+            eqTempFileName = folder + @"\files\konstant_komplet_eq.xml";
+            glTempFileName = folder + @"\files\konstant_komplet_gl.xml";
+            aiTempFileName = folder + @"\files\konstant_komplet_ai.xml";
+            peTempFileName = folder + @"\files\konstant_komplet_pe.xml";
+
+
+            var mappingContext = new MappingContext();
+
+            // Reinitialize cim context to filtered objects
+            var filtered = _initialContext.GetAllObjects();
+
+
+            var converter = new PNM2PowerFactoryConverter(filtered,
+               new List<IPreProcessor> {
+                    new ACLSMerger(mappingContext),
+                    new TransformerCableMerger(mappingContext),
+                    new KonstantBigEnergyConsumerHandler(mappingContext),
+                    new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
+               });
+
+            // Reinitialize cim context to converted objects
+            var outputCimObjects = converter.GetCimObjects().ToList();
+
+            // We need to reinitialize context, because converter has modified objects
+            CimContext _context = CimContext.Create(outputCimObjects);
+
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.NewGuid(), "Konstant hele net");
+            eqWriter.ForceThreePhases = true;
+
+            var glWriter = new GL_Writer(glTempFileName);
+            var aiWriter = new AI_Writer(aiTempFileName, _context, mappingContext);
+            var peWriter = new PE_Writer(peTempFileName, _context, mappingContext);
+
+
+            //////////////////////
+            // do the lines
+            var lineContext = new LineInfoContext(_context);
+            //lineContext.CreateLineInfo();
+            Dictionary<SimpleLine, string> lineToGuid = new Dictionary<SimpleLine, string>();
+
+
+            foreach (var line in lineContext.GetLines())
+            {
+                var lineGuid = GUIDHelper.CreateDerivedGuid(Guid.Parse(line.Children[0].Equipment.mRID), 678, true).ToString();
+                lineToGuid.Add(line, lineGuid);
+
+                //eqWriter.AddLine(lineGuid, line.Name);
+            }
+
+            //////////////////////
+            // do the general cim objects
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (!(cimObject is Location) && !(cimObject is VoltageLevel && ((VoltageLevel)cimObject).BaseVoltage < 400))
+                {
+                    if (cimObject is ACLineSegment)
+                    {
+                        var acls = cimObject as ACLineSegment;
+
+                        var lines = lineContext.GetLines().Where(l => l.Children.Exists(c => c.Equipment == acls)).ToList();
+
+                        if (lines.Count == 1)
+                        {
+                            var line = lines[0];
+                            eqWriter.AddPNMObject(acls, lineToGuid[line]);
+                        }
+                        else
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+
+                    }
+                    else
+                    {
+                        // Don't add things that goes into asset and protectionn file
+                        if (!(
+                            (cimObject is PhysicalNetworkModel.Asset) ||
+                            (cimObject is PhysicalNetworkModel.AssetInfo) ||
+                            (cimObject is PhysicalNetworkModel.ProductAssetModel) ||
+                            (cimObject is PhysicalNetworkModel.Manufacturer) ||
+                            (cimObject is CurrentTransformerExt) ||
+                            (cimObject is PotentialTransformer) ||
+                            (cimObject is ProtectionEquipmentExt) ||
+                            (cimObject is CoordinateSystem) ||
+                            (cimObject is SynchronousMachine) ||
+                            (cimObject is AsynchronousMachine) ||
+                            (cimObject is ExternalNetworkInjection) ||
+                            (cimObject is FaultIndicator) ||
+                            (cimObject is UsagePoint)
+                            ))
+                            eqWriter.AddPNMObject((dynamic)cimObject);
+                    }
+                }
+
+                if (cimObject is PowerSystemResource)
+                {
+                    var psrObj = cimObject as PowerSystemResource;
+
+                    if (psrObj.Location != null && psrObj.Location.@ref != null)
+                    {
+                        var loc = _context.GetObject<PhysicalNetworkModel.LocationExt>(psrObj.Location.@ref);
+                        glWriter.AddLocation(Guid.Parse(psrObj.mRID), loc);
+                    }
+                    if (psrObj.Assets != null && psrObj.Assets.@ref != null)
+                        assetToEqRefs.Add(psrObj.Assets.@ref, psrObj.mRID);
+                }
+            }
+
+            //////////////////////
+            // do the asset object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.Asset)
+                {
+                    if (assetToEqRefs.ContainsKey(cimObject.mRID))
+                    {
+                        var eqMrid = assetToEqRefs[cimObject.mRID];
+                        aiWriter.AddPNMObject((dynamic)cimObject, eqMrid);
+                    }
+                }
+
+                if (cimObject is PhysicalNetworkModel.AssetInfo)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.ProductAssetModel)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+                if (cimObject is PhysicalNetworkModel.Manufacturer)
+                    aiWriter.AddPNMObject((dynamic)cimObject);
+
+            }
+
+            //////////////////////
+            // do the projection object
+            foreach (var cimObject in _context.GetAllObjects())
+            {
+                if (cimObject is PhysicalNetworkModel.ProtectionEquipment)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.PotentialTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+                if (cimObject is PhysicalNetworkModel.CurrentTransformer)
+                {
+                    peWriter.AddPNMObject((dynamic)cimObject);
+                }
+            }
+
+            eqWriter.Close();
+            glWriter.Close();
+            aiWriter.Close();
+            peWriter.Close();
+
+          
+            string startPath = folder + "\\files";
+            string zipPath = folder + "\\konstant_komplet_net.zip";
 
             File.Delete(zipPath);
 
@@ -498,7 +1020,7 @@ namespace DAX.CIM.PFAdapter.Tests
                 x0 = new PhysicalNetworkModel.Reactance() { Value = 0}
             };
 
-            var converter = new EQ_Writer(eqTempFileName, null, null);
+            var converter = new EQ_Writer(eqTempFileName, null, null, Guid.NewGuid(), "test");
 
             converter.AddPNMObject((dynamic)acls);
             converter.Close();

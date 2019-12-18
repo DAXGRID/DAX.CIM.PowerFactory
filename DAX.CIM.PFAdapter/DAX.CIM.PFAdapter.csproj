@@ -60,13 +60,13 @@
     <Compile Include="CGMES\DL_Writer.cs" />
     <Compile Include="CGMES\EQ_Writer.cs" />
     <Compile Include="PNM2PowerFactoryConverter.cs" />
-    <Compile Include="PreProcessors\BigEnergyConsumerHandler.cs" />
+    <Compile Include="PreProcessors\Konstant\KonstantBigEnergyConsumerHandler.cs" />
     <Compile Include="PreProcessors\TransformerCableRemover.cs" />
     <Compile Include="PreProcessors\MappingContext.cs" />
     <Compile Include="PreProcessors\ACLSMerger.cs" />
     <Compile Include="PreProcessors\GUIDHelper.cs" />
     <Compile Include="PreProcessors\IPreProcessor.cs" />
-    <Compile Include="PreProcessors\PowerFactoryDataPrepare.cs" />
+    <Compile Include="PreProcessors\Konstant\KonstantPowerFactoryDataPrepare.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protection\PE_Writer.cs" />
   </ItemGroup>
@@ -83,6 +83,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Common\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

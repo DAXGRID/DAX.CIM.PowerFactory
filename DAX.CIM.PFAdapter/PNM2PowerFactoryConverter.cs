@@ -24,12 +24,15 @@ namespace DAX.CIM.PFAdapter
 
         public IEnumerable<PhysicalNetworkModel.IdentifiedObject> GetCimObjects()
         {
-            var input = _inputCimObjects;
-            var output = _inputCimObjects;
+            var input = _inputCimObjects.ToList();
+            var output = _inputCimObjects.ToList();
 
             foreach (var preProcessor in _preProcessors)
             {
                 output = preProcessor.Transform(_context, input).ToList();
+
+                var ecTest = output.Find(c => c.name == "571313124501006982" && c is PhysicalNetworkModel.EnergyConsumer);
+
                 input = output;
             }
 

@@ -279,7 +279,7 @@ namespace DAX.CIM.PFAdapter.Asset
                 xml += "  <cim:WireInfo.material rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WireMaterialKind." + assetInfo.material.ToString() + "'/>\r\n";
 
             if (assetInfo.ratedCurrent != null)
-                xml += "  <cim:WireInfo.ratedCurrent>" + DoubleToString(assetInfo.ratedCurrent.Value) + "</cim:WireInfo.ratedCurrent>\r\n";
+                xml += "  <cim:WireInfo.ratedCurrent>" + DoubleToString(assetInfo.ratedCurrent.Value / 1000) + "</cim:WireInfo.ratedCurrent>\r\n";
             return xml;
         }
 

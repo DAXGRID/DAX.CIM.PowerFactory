@@ -62,7 +62,7 @@ namespace DAX.CIM.PFAdapter.Tests
             var converter = new PNM2PowerFactoryConverter(_context.GetAllObjects(), 
                 new List<IPreProcessor> {
                     new ACLSMerger(mappingContext),
-                    new PowerFactoryDataPrepareAndFix(mappingContext)
+                    new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
                 });
 
             var outputCimObjects = converter.GetCimObjects().ToList();
@@ -70,7 +70,8 @@ namespace DAX.CIM.PFAdapter.Tests
             // We need to reinitialize context, because converter has modified objects
             _context = CimContext.Create(outputCimObjects);
 
-            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext);
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.Parse("48acc999-f45c-475a-b61c-09e7d1001fc1"), "Engum");
+
             var glWriter = new GL_Writer(glTempFileName);
 
             HashSet<PhysicalNetworkModel.ConnectivityNode> cnAlreadyWritten = new HashSet<PhysicalNetworkModel.ConnectivityNode>();
@@ -299,7 +300,8 @@ where GIS_straekningsid like '30249-30466%'
                 x0 = new PhysicalNetworkModel.Reactance() { Value = 0}
             };
 
-            var converter = new EQ_Writer(eqTempFileName, null, null);
+            var converter = new EQ_Writer(eqTempFileName, null, null, Guid.NewGuid(),"test");
+
 
             converter.AddPNMObject((dynamic)acls);
             converter.Close();
