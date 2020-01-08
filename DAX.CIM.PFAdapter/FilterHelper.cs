@@ -2,13 +2,14 @@
 using DAX.CIM.PhysicalNetworkModel.FeederInfo;
 using DAX.CIM.PhysicalNetworkModel.Traversal;
 using DAX.CIM.PhysicalNetworkModel.Traversal.Extensions;
+using DAX.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DAX.CIM.PFAdapter.Tests
+namespace DAX.CIM.PFAdapter
 {
     public static class FilterHelper
     {
@@ -173,7 +174,7 @@ namespace DAX.CIM.PFAdapter.Tests
                                 }
                                 else if (ecAclsNeighbors.Count > 1)
                                 {
-                                    System.Diagnostics.Debug.WriteLine("Cannot convert: " + ec.name + " multiply cables connected to customer. Must be modelled in PF.");
+                                    Logger.Log(LogLevel.Warning, "Cannot convert: " + ec.name + " multiply cables connected to customer. Must be modelled in PF.");
                                 }
                             }
 

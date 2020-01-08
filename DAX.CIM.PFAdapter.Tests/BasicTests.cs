@@ -44,7 +44,7 @@ namespace DAX.CIM.PFAdapter.Tests
             
             var inputObjects = _context.GetAllObjects().Where(o => (o is PhysicalNetworkModel.ACLineSegment && o.name != null && o.name.Contains("BRB-30904")) || !(o is PhysicalNetworkModel.ACLineSegment) );
             
-            var converter = new PNM2PowerFactoryConverter(inputObjects, new List<IPreProcessor> { new ACLSMerger(new MappingContext()) });
+            var converter = new PNM2PowerFactoryCimConverter(inputObjects, new List<IPreProcessor> { new ACLSMerger(new MappingContext()) });
 
             var outputCimObjects = converter.GetCimObjects().ToList();
 
@@ -59,7 +59,7 @@ namespace DAX.CIM.PFAdapter.Tests
 
             var mappingContext = new MappingContext();
 
-            var converter = new PNM2PowerFactoryConverter(_context.GetAllObjects(), 
+            var converter = new PNM2PowerFactoryCimConverter(_context.GetAllObjects(), 
                 new List<IPreProcessor> {
                     new ACLSMerger(mappingContext),
                     new KonstantPowerFactoryDataPrepareAndFix(mappingContext)

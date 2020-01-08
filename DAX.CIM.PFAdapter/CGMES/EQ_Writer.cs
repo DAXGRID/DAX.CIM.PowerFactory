@@ -581,6 +581,47 @@ namespace DAX.CIM.PFAdapter.CGMES
             }
             */
 
+            
+
+            // HACK som skal fjernes
+            if (end.endNumber == "1")
+            {
+                // Lokal trafoer
+                if (pt.name.ToLower().Contains("lokal"))
+                {
+                    end.grounded = false;
+                }
+                // Mellemspændings trafo
+                else if (end.BaseVoltage < 20000)
+                {
+                    end.grounded = false;
+                }
+                else
+                {
+                    end.grounded = false;
+                }
+            }
+           
+
+            if (end.endNumber == "2")
+            {
+                // Lokal trafoer
+                if (pt.name.ToLower().Contains("lokal"))
+                {
+                    end.grounded = true;
+                }
+                // Mellemspændings trafo
+                else if (end.BaseVoltage < 1000)
+                {
+                    end.grounded = true;
+                }
+                else
+                {
+                    end.grounded = false;
+                }
+             }
+
+
             if (end.phaseAngleClock != null)
                 xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
 

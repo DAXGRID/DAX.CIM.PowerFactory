@@ -11,6 +11,7 @@ using GeoAPI.Geometries;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Operation.Linemerge;
 using DAX.CIM.PFAdapter.PreProcessors;
+using DAX.Util;
 
 namespace DAX.CIM.PFAdapter
 {
@@ -76,11 +77,11 @@ namespace DAX.CIM.PFAdapter
                 {
                     var bus = inputCimObject as BusbarSection;
 
-                    var vl = context.GetObject<VoltageLevel>(bus.EquipmentContainer.@ref);
+                    //var vl = context.GetObject<VoltageLevel>(bus.EquipmentContainer.@ref);
 
                     var st = bus.GetSubstation(true, context);
 
-                    bus.name = st.name + "_" + GetVoltageLevelStr(vl.BaseVoltage) + "_" + bus.name;
+                    bus.name = st.name + "_" + GetVoltageLevelStr(bus.BaseVoltage) + "_" + bus.name;
                 }
             }
 
@@ -153,7 +154,7 @@ namespace DAX.CIM.PFAdapter
                             var stName = ct.GetSubstation(true, context).name;
                             var bayName = ct.GetBay(true, context).name;
 
-                            System.Diagnostics.Debug.WriteLine("CT Missing primary current: " + stName + " " + bayName);
+                            Logger.Log(LogLevel.Warning,"CT Missing primary currentw: " + stName + " " + bayName);
                             ctInfo.primaryCurrent = new CurrentFlow() { Value = 0, unit = UnitSymbol.A };
                         }
 
@@ -162,7 +163,7 @@ namespace DAX.CIM.PFAdapter
                             var stName = ct.GetSubstation(true, context).name;
                             var bayName = ct.GetBay(true, context).name;
 
-                            System.Diagnostics.Debug.WriteLine("CT Missing secondary current: " + stName + " " + bayName);
+                            Logger.Log(LogLevel.Warning, "CT Missing secondary current: " + stName + " " + bayName);
                             ctInfo.secondaryCurrent = new CurrentFlow() { Value = 0, unit = UnitSymbol.A };
                         }
 
@@ -192,7 +193,7 @@ namespace DAX.CIM.PFAdapter
                         var stName = ct.GetSubstation(true, context).name;
                         var bayName = ct.GetBay(true, context).name;
 
-                        System.Diagnostics.Debug.WriteLine("VT Missing primary voltage: " + stName + " " + bayName);
+                        Logger.Log(LogLevel.Warning, "VT Missing primary voltage: " + stName + " " + bayName);
 
                     }
 
@@ -203,7 +204,7 @@ namespace DAX.CIM.PFAdapter
                         var stName = ct.GetSubstation(true, context).name;
                         var bayName = ct.GetBay(true, context).name;
 
-                        System.Diagnostics.Debug.WriteLine("VT Missing secondary voltage: " + stName + " " + bayName);
+                        Logger.Log(LogLevel.Warning, "VT Missing secondary voltage: " + stName + " " + bayName);
 
                     }
 
@@ -228,7 +229,7 @@ namespace DAX.CIM.PFAdapter
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine("Cannot find switch: " + relay.ProtectedSwitches[0].@ref + " connected to replay: " + inputCimObject.mRID);
+                            Logger.Log(LogLevel.Warning, "Cannot find switch: " + relay.ProtectedSwitches[0].@ref + " connected to replay: " + inputCimObject.mRID);
                         }
                     }
                     else
@@ -278,6 +279,13 @@ namespace DAX.CIM.PFAdapter
                         }
                         else
                         {
+                            var pt = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
+
+                            if (pt.name.ToLower().Contains("lokal"))
+                            {
+
+                            }
+                            
                             // Beregn r
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
 

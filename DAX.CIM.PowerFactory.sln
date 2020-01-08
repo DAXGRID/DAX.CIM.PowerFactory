@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAX.CoordinateConverter", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRGi.MeterExport", "NRGi.MeterExport\NRGi.MeterExport.csproj", "{7C242108-3408-4B2A-A828-EE1F36992029}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRGi.Gis2PowerFactoryBatchRunner", "NRGi.Gis2PowerFactoryBatchRunner\NRGi.Gis2PowerFactoryBatchRunner.csproj", "{19F64C35-350D-4A07-AC90-17F8B623F5F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{7C242108-3408-4B2A-A828-EE1F36992029}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C242108-3408-4B2A-A828-EE1F36992029}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C242108-3408-4B2A-A828-EE1F36992029}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19F64C35-350D-4A07-AC90-17F8B623F5F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19F64C35-350D-4A07-AC90-17F8B623F5F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19F64C35-350D-4A07-AC90-17F8B623F5F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19F64C35-350D-4A07-AC90-17F8B623F5F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

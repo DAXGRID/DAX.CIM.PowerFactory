@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DAX.CIM.PFAdapter</RootNamespace>
     <AssemblyName>DAX.CIM.PFAdapter</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,6 +31,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DAX.CIM.PhysicalNetworkModel.FeederInfo">
+      <HintPath>..\..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel.FeederInfo\bin\Debug\DAX.CIM.PhysicalNetworkModel.FeederInfo.dll</HintPath>
+    </Reference>
+    <Reference Include="DAX.CIM.PhysicalNetworkModel.LineInfo">
+      <HintPath>..\..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel.LineInfo\bin\Debug\DAX.CIM.PhysicalNetworkModel.LineInfo.dll</HintPath>
+    </Reference>
+    <Reference Include="DAX.CIM.PhysicalNetworkModel.Traversal">
+      <HintPath>..\..\DAX.CIM.CoreModels\DAX.CIM.PhysicalNetworkModel.Traversal\bin\Debug\DAX.CIM.PhysicalNetworkModel.Traversal.dll</HintPath>
+    </Reference>
+    <Reference Include="DAX.IO">
+      <HintPath>..\..\DAX.Adapter\DAX.IO\DAX.IO\bin\Debug\DAX.IO.dll</HintPath>
+    </Reference>
     <Reference Include="GeoAPI, Version=1.7.5.0, Culture=neutral, PublicKeyToken=a1a0da7def465678, processorArchitecture=MSIL">
       <HintPath>..\packages\GeoAPI.1.7.5-pre2\lib\net45\GeoAPI.dll</HintPath>
       <Private>True</Private>
@@ -59,7 +72,9 @@
     <Compile Include="Asset\AI_Writer.cs" />
     <Compile Include="CGMES\DL_Writer.cs" />
     <Compile Include="CGMES\EQ_Writer.cs" />
-    <Compile Include="PNM2PowerFactoryConverter.cs" />
+    <Compile Include="FilterHelper.cs" />
+    <Compile Include="KonstantCimArchiveWriter.cs" />
+    <Compile Include="PNM2PowerFactoryCimConverter.cs" />
     <Compile Include="PreProcessors\Konstant\KonstantBigEnergyConsumerHandler.cs" />
     <Compile Include="PreProcessors\TransformerCableRemover.cs" />
     <Compile Include="PreProcessors\MappingContext.cs" />
