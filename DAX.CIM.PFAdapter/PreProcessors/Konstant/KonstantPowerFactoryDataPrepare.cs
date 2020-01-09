@@ -285,15 +285,20 @@ namespace DAX.CIM.PFAdapter
                             {
 
                             }
+
+                            if (pt.mRID == "ece14812-3e66-4c1e-8cb9-7ed52a20a78b")
+                            {
+
+                            }
                             
-                            // Beregn r
+                            // Beregn r: loss * (ratedU / ratedS * 1000)^2
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
 
-                            // Beregn g: (LossZero/ratedU^2)
+                            // Beregn g: (LossZero / ratedU^2)
                             double g = ptEnd.lossZero.Value / Math.Pow(ptEnd.ratedU.Value, 2);
                             ptEnd.g = new Conductance() { Value = g };
 
-                            // Beregn YOC: (excitingCurrentZero*ratedS)/(100*ratedU^2)
+                            // Beregn YOC: (excitingCurrentZero*ratedS)/(100 * (ratedU^2))
                             double yoc = (ptEnd.excitingCurrentZero.Value * (ptEnd.ratedS.Value * 1000)) / (100 * Math.Pow(ptEnd.ratedU.Value, 2));
 
                             // Beregn b: SQRT(YOC^2-g^2)
@@ -312,6 +317,10 @@ namespace DAX.CIM.PFAdapter
                                     Math.Pow(zk, 2) - Math.Pow(ptEnd.r.Value, 2)
                                )
                             };
+
+                            // beregn 0 værdier
+                            //if (ptEnd.connectionKind =
+
                         }
                     }
 

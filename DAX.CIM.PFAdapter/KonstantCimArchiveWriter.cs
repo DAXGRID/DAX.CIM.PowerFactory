@@ -133,7 +133,7 @@ namespace DAX.CIM.PFAdapter
                 {
                     var psrObj = cimObject as PowerSystemResource;
 
-                    if (psrObj.Location != null && psrObj.Location.@ref != null)
+                    if (psrObj.Location != null && psrObj.Location.@ref != null && psrObj.PSRType != "InternalCable")
                     {
                         var loc = _context.GetObject<PhysicalNetworkModel.LocationExt>(psrObj.Location.@ref);
                         glWriter.AddLocation(Guid.Parse(psrObj.mRID), loc);

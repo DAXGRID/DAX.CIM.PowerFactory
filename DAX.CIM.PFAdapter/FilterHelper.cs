@@ -84,7 +84,7 @@ namespace DAX.CIM.PFAdapter
                             {
                                 var ce = neighbors.First(c => c.IsInsideSubstation() && (rule.IncludeSpecificSubstations == null || rule.IncludeSpecificSubstations.Contains(c.GetSubstation().name)));
                                 
-                                // put in inside substation
+                                // put injection inside substation
                                 eni.BaseVoltage = ce.BaseVoltage;
                                 eni.EquipmentContainer = new EquipmentEquipmentContainer() {  @ref = context.GetObject<Bay>(ce.EquipmentContainer.@ref).VoltageLevel.@ref };
                             }
