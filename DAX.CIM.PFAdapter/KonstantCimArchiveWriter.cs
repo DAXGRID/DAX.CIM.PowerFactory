@@ -22,7 +22,7 @@ namespace DAX.CIM.PFAdapter
     /// </summary>
     public class KonstantCimArchiveWriter
     {
-        public KonstantCimArchiveWriter(IEnumerable<PhysicalNetworkModel.IdentifiedObject> cimObjects, string outputFolder, string archiveName)
+        public KonstantCimArchiveWriter(IEnumerable<PhysicalNetworkModel.IdentifiedObject> cimObjects, string outputFolder, string archiveName, Guid modelRdfId)
         {
 
             System.IO.Directory.CreateDirectory(outputFolder);
@@ -64,7 +64,7 @@ namespace DAX.CIM.PFAdapter
             // We need to reinitialize context, because converter has modified objects
             _context = CimContext.Create(outputCimObjects);
 
-            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, Guid.Parse("b8a2ec4d-8337-4a1c-9aec-32b8335435c0"), "Konstant syd");
+            var eqWriter = new EQ_Writer(eqTempFileName, _context, mappingContext, modelRdfId, archiveName);
             eqWriter.ForceThreePhases = true;
 
             var glWriter = new GL_Writer(glTempFileName);

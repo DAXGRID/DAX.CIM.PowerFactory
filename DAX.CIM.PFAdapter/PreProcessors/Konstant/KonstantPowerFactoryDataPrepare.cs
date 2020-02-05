@@ -42,12 +42,6 @@ namespace DAX.CIM.PFAdapter
 
             foreach (var inputCimObject in input)
             {
-
-                if (inputCimObject.name == "571313124501006982" && inputCimObject is EnergyConsumer)
-                {
-
-                }
-
                 if (inputCimObject is PhysicalNetworkModel.Asset)
                 {
                     var asset = inputCimObject as PhysicalNetworkModel.Asset;
@@ -142,9 +136,10 @@ namespace DAX.CIM.PFAdapter
                 {
                     var ctInfo = inputCimObject as CurrentTransformerInfoExt;
                     var assetMrid = assetInfoToAssetRef[ctInfo.mRID];
-                    var eq = assetToEquipmentRef[assetMrid];
+                    var eqMrid = assetToEquipmentRef[assetMrid];
 
-                    var ct = context.GetObject<CurrentTransformerExt>(eq);
+                    var ct = context.GetObject<CurrentTransformerExt>(eqMrid);
+                    var ctAsset = context.GetObject<PhysicalNetworkModel.Asset>(assetMrid);
 
                     if (ct.PSRType != null && ct.PSRType == "StromTransformer")
                     {
@@ -154,8 +149,12 @@ namespace DAX.CIM.PFAdapter
                             var stName = ct.GetSubstation(true, context).name;
                             var bayName = ct.GetBay(true, context).name;
 
-                            Logger.Log(LogLevel.Warning,"CT Missing primary currentw: " + stName + " " + bayName);
+                            Logger.Log(LogLevel.Warning,"CT Missing primary current. Will not be transfered to PF: " + stName + " " + bayName);
                             ctInfo.primaryCurrent = new CurrentFlow() { Value = 0, unit = UnitSymbol.A };
+
+                            dropList.Add(ct);
+                            dropList.Add(ctAsset);
+                            dropList.Add(ctInfo);
                         }
 
                         if (ctInfo.secondaryCurrent == null)
@@ -170,8 +169,9 @@ namespace DAX.CIM.PFAdapter
                     }
                     else
                     {
-                        dropList.Add(inputCimObject);
                         dropList.Add(ct);
+                        dropList.Add(ctAsset);
+                        dropList.Add(ctInfo);
                     }
                 }
 
@@ -181,33 +181,36 @@ namespace DAX.CIM.PFAdapter
                     var vtInfo = inputCimObject as PotentialTransformerInfoExt;
 
                     var assetMrid = assetInfoToAssetRef[vtInfo.mRID];
-                    var eq = assetToEquipmentRef[assetMrid];
+                    var eqMrid = assetToEquipmentRef[assetMrid];
 
-                    var ct = context.GetObject<PotentialTransformer>(eq);
+                    var vtAsset = context.GetObject<PhysicalNetworkModel.Asset>(assetMrid);
+                    var vt = context.GetObject<PotentialTransformer>(eqMrid);
+                    var vtSt = vt.GetSubstation(true, context); 
 
                     // Make sure primary and secondary voltage is set, because otherwise PF import fails
                     if (vtInfo.primaryVoltage == null)
                     {
                         vtInfo.primaryVoltage = new Voltage() { Value = 0, unit = UnitSymbol.V };
 
-                        var stName = ct.GetSubstation(true, context).name;
-                        var bayName = ct.GetBay(true, context).name;
+                        var stName = vt.GetSubstation(true, context).name;
+                        var bayName = vt.GetBay(true, context).name;
 
-                        Logger.Log(LogLevel.Warning, "VT Missing primary voltage: " + stName + " " + bayName);
+                        Logger.Log(LogLevel.Warning, "VT Missing primary voltage. VT will not be transfered to PF: " + stName + " " + bayName);
 
+                        dropList.Add(vt);
+                        dropList.Add(vtAsset);
+                        dropList.Add(vtInfo);
                     }
 
                     if (vtInfo.secondaryVoltage == null)
                     {
                         vtInfo.secondaryVoltage = new Voltage() { Value = 0, unit = UnitSymbol.V };
 
-                        var stName = ct.GetSubstation(true, context).name;
-                        var bayName = ct.GetBay(true, context).name;
+                        var stName = vt.GetSubstation(true, context).name;
+                        var bayName = vt.GetBay(true, context).name;
 
                         Logger.Log(LogLevel.Warning, "VT Missing secondary voltage: " + stName + " " + bayName);
-
                     }
-
                 }
 
 

@@ -1,4 +1,5 @@
 ﻿using DAX.CIM.PFAdapter;
+using DAX.CIM.PhysicalNetworkModel;
 using DAX.Cson;
 using DAX.IO;
 using DAX.IO.CIM;
@@ -22,7 +23,7 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
     {
         static void Main(string[] args)
         {
-            if (args.Length != 5)
+            if (args.Length != 6)
             {
                 System.Console.Out.WriteLine("Usage: Gis2PowerFactoryBatchRunner.exe inputAdapterConfigFileName outputCimArchiveFolder outputCimArchiveName outputLogFile extent");
                 return;
@@ -33,8 +34,9 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
                 string cimAdapterConfig = args[0];
                 string cimArchiveFolder = args[1];
                 string cimArchiveName = args[2];
-                string logFileName = args[3];
-                string extent = args[4];
+                Guid cimModeRdfId = Guid.Parse(args[3]);
+                string logFileName = args[4];
+                string extent = args[5];
 
                 var cimFileName = cimArchiveName + ".jsonl";
 
@@ -66,9 +68,12 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
                 // Serialize
                 var serializer = config.InitializeSerializer("DAX") as IDAXSerializeable;
 
-                var cimObjects = ((DAXCIMSerializer)serializer).GetIdentifiedObjects(CIMMetaDataManager.Repository, graph.CIMObjects, true, true, true);
+                var cimObjects = ((DAXCIMSerializer)serializer).GetIdentifiedObjects(CIMMetaDataManager.Repository, graph.CIMObjects, true, true, true).ToList();
 
-                var pfWriter = new KonstantCimArchiveWriter(cimObjects, cimArchiveFolder, cimArchiveName);
+                var bus = cimObjects.First(c => c.mRID == "bb1fc278-1b26-4441-b604-a36d6c72525c") as BusbarSection;
+                var busEc = cimObjects.First(c => c.mRID == bus.EquipmentContainer.@ref);
+
+                var pfWriter = new KonstantCimArchiveWriter(cimObjects, cimArchiveFolder, cimArchiveName, cimModeRdfId);
 
                 Logger.Log(LogLevel.Info, "Export to Power Factory CIM Archive: " + cimArchiveFolder + "\\" + cimArchiveName + ".zip finished.");
 

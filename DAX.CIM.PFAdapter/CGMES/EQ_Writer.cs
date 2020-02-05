@@ -29,7 +29,11 @@ namespace DAX.CIM.PFAdapter.CGMES
         StreamWriter _writer = null;
         CimContext _cimContext = null;
 
-        string _startContent = @"<?xml version='1.0' encoding='UTF-8'?>
+        private string GetStartContent()
+        {
+            return (
+
+              @"<?xml version='1.0' encoding='UTF-8'?>
   <rdf:RDF xmlns:cim='http://iec.ch/TC57/2013/CIM-schema-cim16#' xmlns:entsoe='http://entsoe.eu/CIM/SchemaExtension/3/1#' xmlns:md='http://iec.ch/TC57/61970-552/ModelDescription/1#' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
   <md:FullModel rdf:about='" + EQ_Writer._eqModelId.ToString() + @"'>
     <md:Model.scenarioTime>" + _timeStamp.ToString() + @"</md:Model.scenarioTime>
@@ -46,7 +50,7 @@ namespace DAX.CIM.PFAdapter.CGMES
   </cim:GeographicalRegion>
 
   <cim:SubGeographicalRegion rdf:ID='_0472a781-c766-11e1-8775-005056c00008'>
-    <cim:IdentifiedObject.name>Konstant</cim:IdentifiedObject.name>
+    <cim:IdentifiedObject.name>" + _netName + @"</cim:IdentifiedObject.name>
     <cim:SubGeographicalRegion.Region rdf:resource='#_0472f5a6-c766-11e1-8775-005056c00008' />
   </cim:SubGeographicalRegion>
  
@@ -69,8 +73,8 @@ namespace DAX.CIM.PFAdapter.CGMES
     <cim:IdentifiedObject.name>60.00</cim:IdentifiedObject.name>
     <cim:BaseVoltage.nominalVoltage>64</cim:BaseVoltage.nominalVoltage>
   </cim:BaseVoltage>
-
-";
+");
+        }
 
 
         Dictionary<double, string> _baseVoltageIdLookup = new Dictionary<double, string>();
@@ -99,7 +103,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         private void Open()
         {
             _writer = new StreamWriter(_fileName, false, Encoding.UTF8);
-            _writer.Write(_startContent);
+            _writer.Write(GetStartContent());
             _writer.Write("\r\n\r\n");
         }
 
@@ -189,7 +193,10 @@ namespace DAX.CIM.PFAdapter.CGMES
         {
             string xml = "<cim:ExternalNetworkInjection rdf:ID='_" + eni.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(eni.name) + "</cim:IdentifiedObject.name>\r\n";
-            xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + eni.EquipmentContainer.@ref + "'/>\r\n";
+
+            if (eni.EquipmentContainer != null)
+                xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + eni.EquipmentContainer.@ref + "'/>\r\n";
+
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(eni.BaseVoltage) + "'/>\r\n";
 
             if (eni.governorSCD != null)
@@ -356,7 +363,7 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.Fuse fuse)
         {
-            // create disconnector, because PF thinks that fuse is not a conduction equipment
+            // create disconnector, because PF thinks that fuse is not a conducting equipment
             string xml = "<cim:Disconnector rdf:ID='_" + fuse.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(fuse.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + fuse.EquipmentContainer.@ref + "'/>\r\n";

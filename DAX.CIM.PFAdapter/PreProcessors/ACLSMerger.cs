@@ -43,11 +43,6 @@ namespace DAX.CIM.PFAdapter
                 // Find connectivity nodes outside substations
                 if (inputCimObject is ConnectivityNode && !dropList.Contains(inputCimObject) && !inputCimObject.IsInsideSubstation(context))
                 {
-                    if (inputCimObject.mRID == "43ad242e-30e2-7049-bd2a-696a3f850578")
-                    {
-
-                    }
-
                     ConnectivityNode cn = inputCimObject as ConnectivityNode;
 
                     // Handle that acls cn relationship might have changed
@@ -257,7 +252,6 @@ namespace DAX.CIM.PFAdapter
             {
                 yield return inputObj;
             }
-
 
         }
 

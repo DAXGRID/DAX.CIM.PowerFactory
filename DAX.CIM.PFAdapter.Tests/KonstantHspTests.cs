@@ -238,16 +238,13 @@ namespace DAX.CIM.PFAdapter.Tests
         [TestMethod]
         public void TestSouthArea()
         {
-
             var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_syd.jsonl"));
 
             var cimObjects = reader.Read();
 
             folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_syd_prod";
 
-            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_south");
-
-
+            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_south", Guid.Parse("b8a2ec4d-8337-4a1c-9aec-32b8335435c0"));
         }
 
         [TestMethod]
@@ -259,7 +256,7 @@ namespace DAX.CIM.PFAdapter.Tests
 
             folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_nord_prod";
 
-            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_north");
+            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_north", Guid.Parse("3b697c10-ed30-47bb-98b6-f6960df87a41"));
 
         }
 
