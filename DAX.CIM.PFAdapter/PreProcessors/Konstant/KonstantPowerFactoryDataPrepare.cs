@@ -283,16 +283,6 @@ namespace DAX.CIM.PFAdapter
                         else
                         {
                             var pt = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
-
-                            if (pt.name.ToLower().Contains("lokal"))
-                            {
-
-                            }
-
-                            if (pt.mRID == "ece14812-3e66-4c1e-8cb9-7ed52a20a78b")
-                            {
-
-                            }
                             
                             // Beregn r: loss * (ratedU / ratedS * 1000)^2
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
@@ -320,10 +310,6 @@ namespace DAX.CIM.PFAdapter
                                     Math.Pow(zk, 2) - Math.Pow(ptEnd.r.Value, 2)
                                )
                             };
-
-                            // beregn 0 værdier
-                            //if (ptEnd.connectionKind =
-
                         }
                     }
 
@@ -452,33 +438,9 @@ namespace DAX.CIM.PFAdapter
                 }
             }
 
-            // Change trafo names
-            /*
-             * Virker ikke fordi det smadre PF's navgivning af load og generator som de sætter ind
-            foreach (var inputCimObject in input)
-            {
-                if (inputCimObject is PowerTransformer)
-                {
-                    var pt = inputCimObject as PowerTransformer;
-
-                    var ptEnds = context.GetPowerTransformerEnds(pt);
-
-                    pt.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(ptEnds[0].BaseVoltage) + "_" + GetVoltageLevelStr(ptEnds[1].BaseVoltage) + "_" + pt.name.Replace("TRF", "");
-                }
-            }
-            */
-
-            var ecTest = input.Find(c => c.name == "571313124501006982" && c is PhysicalNetworkModel.EnergyConsumer);
-
-
             // return objects, except the one dropped
             foreach (var inputObj in input)
             {
-                if (inputObj.name == "571313124501006982" && inputObj is EnergyConsumer)
-                {
-
-                }
-
                 if (!dropList.Contains(inputObj))
                     yield return inputObj;
             }
