@@ -283,6 +283,7 @@ namespace DAX.CIM.PFAdapter
                         else
                         {
                             var pt = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
+
                             
                             // Beregn r: loss * (ratedU / ratedS * 1000)^2
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
@@ -310,6 +311,13 @@ namespace DAX.CIM.PFAdapter
                                     Math.Pow(zk, 2) - Math.Pow(ptEnd.r.Value, 2)
                                )
                             };
+
+
+
+                            if (pt.mRID == "EB6178A6-7C04-4768-89B8-7F2EE2CCE662")
+                            {
+                            }
+
                         }
                     }
 
@@ -450,7 +458,6 @@ namespace DAX.CIM.PFAdapter
             {
                 yield return inputObj;
             }
-
         }
 
         private string GetVoltageLevelStr(double voltageLevel)

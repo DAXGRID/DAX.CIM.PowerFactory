@@ -70,9 +70,6 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
 
                 var cimObjects = ((DAXCIMSerializer)serializer).GetIdentifiedObjects(CIMMetaDataManager.Repository, graph.CIMObjects, true, true, true).ToList();
 
-                var bus = cimObjects.First(c => c.mRID == "bb1fc278-1b26-4441-b604-a36d6c72525c") as BusbarSection;
-                var busEc = cimObjects.First(c => c.mRID == bus.EquipmentContainer.@ref);
-
                 var pfWriter = new KonstantCimArchiveWriter(cimObjects, cimArchiveFolder, cimArchiveName, cimModeRdfId);
 
                 Logger.Log(LogLevel.Info, "Export to Power Factory CIM Archive: " + cimArchiveFolder + "\\" + cimArchiveName + ".zip finished.");
