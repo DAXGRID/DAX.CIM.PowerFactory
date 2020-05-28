@@ -29,7 +29,7 @@ namespace DAX.CIM.PFAdapter.Asset
         public static string _assetModelId = Guid.NewGuid().ToString();
         public static DateTime _timeStamp = DateTime.Now;
 
-        static string _modelVersion = "http://konstant.dk/CIM/AssetExtension/1/3";
+        static string _modelVersion = "http://konstant.dk/CIM/AssetExtension/1/4";
         
         string _startContent = @"<?xml version='1.0' encoding='UTF-8'?>
   <rdf:RDF xml:base='http://iec.ch/TC57/2013/CIM-schema-cim16' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:md='http://iec.ch/TC57/61970-552/ModelDescription/1#' xmlns:rdfs='http://www.w3.org/2000/01/rdf-schema#' xmlns:xsd='http://www.w3.org/2001/XMLSchema#' xmlns:kon='" + _modelVersion + @"#' xmlns:cim='http://iec.ch/TC57/2013/CIM-schema-cim16#' xmlns:cims='http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#' xmlns:entsoe='http://entsoe.eu/CIM/SchemaExtension/3/1#'>
@@ -201,6 +201,11 @@ namespace DAX.CIM.PFAdapter.Asset
             if (assetInfo.upperBound != null)
                 xml += "  <cim:PowerTransformerInfoExt.upperBound>" + DoubleToString(assetInfo.upperBound.Value) + "</cim:PowerTransformerInfoExt.upperBound>\r\n";
 
+            if (assetInfo.hasInternalDeltaWinding)
+                xml += "  <cim:PowerTransformerInfoExt.hasInternalDeltaWinding>true</cim:PowerTransformerInfoExt.hasInternalDeltaWinding>\r\n";
+            else
+                xml += "  <cim:PowerTransformerInfoExt.hasInternalDeltaWinding>false</cim:PowerTransformerInfoExt.hasInternalDeltaWinding>\r\n";
+           
             xml += "</cim:PowerTransformerInfoExt>\r\n\r\n";
             _writer.Write(xml);
         }

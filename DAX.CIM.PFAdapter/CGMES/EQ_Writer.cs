@@ -73,6 +73,12 @@ namespace DAX.CIM.PFAdapter.CGMES
     <cim:IdentifiedObject.name>60.00</cim:IdentifiedObject.name>
     <cim:BaseVoltage.nominalVoltage>64</cim:BaseVoltage.nominalVoltage>
   </cim:BaseVoltage>
+
+  <cim:OperationalLimitType rdf:ID='_b05800c4-9744-45d8-8d9e-c1f39562e4fb'>
+	<cim:IdentifiedObject.name>PATL</cim:IdentifiedObject.name>
+	<entsoe:OperationalLimitType.limitType rdf:resource='http://entsoe.eu/CIM/SchemaExtension/3/1#LimitTypeKind.patl' />
+  </cim:OperationalLimitType>
+
 ");
         }
 
@@ -528,8 +534,8 @@ namespace DAX.CIM.PFAdapter.CGMES
             xml += "</cim:PowerTransformer>\r\n\r\n";
             _writer.Write(xml);
         }
-
-        public void AddPNMObject(PhysicalNetworkModel.PowerTransformerEnd end)
+             
+        public void AddPNMObject(PhysicalNetworkModel.PowerTransformerEndExt end)
         {
             string xml = "<cim:PowerTransformerEnd rdf:ID='_" + end.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + end.name + "</cim:IdentifiedObject.name>\r\n";
@@ -539,57 +545,7 @@ namespace DAX.CIM.PFAdapter.CGMES
             xml += "  <cim:PowerTransformerEnd.PowerTransformer rdf:resource = '#_" + end.PowerTransformer.@ref + "'/>\r\n";
 
             var pt = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformer>(end.PowerTransformer.@ref);
-
-            /* HACK not needed anymore, information come from GIS now
-            if (end.endNumber == "1")
-            {
-                // Lokal trafoer
-                if (pt.name.ToLower().Contains("lokal"))
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Z'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
-                }
-                // Mellemspændings trafo
-                else if (end.BaseVoltage < 20000)
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.D'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
-                }
-                // Højspændings trafo
-                else
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
-                }
-            }
-            if (end.endNumber == "2")
-            {
-                // Lokal trafoer
-                if (pt.name.ToLower().Contains("lokal"))
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>true</cim:TransformerEnd.grounded>\r\n";
-                }
-                // Mellemspændings trafo
-                else if (end.BaseVoltage < 20000)
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>true</cim:TransformerEnd.grounded>\r\n";
-                }
-                // Højspændings trafo
-                else
-                {
-                    xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection.Yn'/>\r\n";
-                    xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
-                }
-
-                if (end.phaseAngleClock != null)
-                    xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
-            }
-            */
-
             
-
             // HACK som skal fjernes
             if (end.endNumber == "1")
             {
@@ -673,8 +629,38 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             xml += "</cim:PowerTransformerEnd>\r\n\r\n";
             _writer.Write(xml);
+
+            // Check if rating factor is set, and if so add current limit
+
+            if (end.ratingFactor != null && end.ratingFactor.Value != 1)
+            {
+                double ratingFactor = end.ratingFactor.Value;
+                double limit = ((end.ratedS.Value * 1000) / end.ratedU.Value / Math.Sqrt(3)) * ratingFactor;
+                AddCurrentLimit(Guid.Parse(end.Terminal.@ref), end.name, limit);
+            }
+
+
         }
 
+        public void AddCurrentLimit(Guid terminalMrid, string name, double currentLimitValue)
+        {
+            // Limit set
+            string xml = "<cim:OperationalLimitSet rdf:ID='_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 750, true).ToString() + "'>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + name + "_limitset</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:OperationalLimitSet.Terminal rdf:resource = '#_" + terminalMrid.ToString() + "'/>\r\n";
+            xml += "</cim:OperationalLimitSet>\r\n\r\n";
+
+            // Current
+            xml += "<cim:CurrentLimit rdf:ID='_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 760, true).ToString() + "'>\r\n";
+            xml += "  <cim:OperationalLimit.OperationalLimitType rdf:resource='#_b05800c4-9744-45d8-8d9e-c1f39562e4fb' />\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + name + "_limit</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:OperationalLimit.OperationalLimitSet rdf:resource = '#_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 750, true).ToString() + "'/>\r\n";
+            xml += "  <cim:CurrentLimit.value>" + DoubleToString(currentLimitValue) + "</cim:CurrentLimit.value>\r\n";
+            xml += "</cim:CurrentLimit>\r\n\r\n";
+
+
+            _writer.Write(xml);
+        }
 
         public void AddPNMObject(PhysicalNetworkModel.EnergyConsumer ec)
         {
@@ -699,7 +685,7 @@ namespace DAX.CIM.PFAdapter.CGMES
             string xml = "<cim:RatioTapChanger rdf:ID = '_" + tap.mRID + "'>\r\n";
 
             xml += "  <cim:RatioTapChanger.TransformerEnd rdf:resource='#_" + tap.TransformerEnd.@ref + "'/>\r\n";
-            xml += "  <cim:TapChanger.TapChangerControl rdf:resource='#_" + controlMrid.ToString() + "'/>\r\n";
+            //xml += "  <cim:TapChanger.TapChangerControl rdf:resource='#_" + controlMrid.ToString() + "'/>\r\n";
 
             xml += "  <cim:IdentifiedObject.name>TAP</cim:IdentifiedObject.name>\r\n";
 
@@ -724,21 +710,22 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             _writer.Write(xml);
 
-            // Create regulating control if automatic
-            if (tap.ltcFlag)
-            {
+           /*
+           // Create regulating control if automatic
+           if (tap.ltcFlag)
+           {
 
-                var ptEnd = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformerEnd>(tap.TransformerEnd.@ref);
+               var ptEnd = _cimContext.GetObject<PhysicalNetworkModel.PowerTransformerEnd>(tap.TransformerEnd.@ref);
 
-                xml = "<cim:TapChangerControl rdf:ID = '_" + controlMrid.ToString() + "'>\r\n";
-                xml += "  <cim:IdentifiedObject.name>Tab Controler</cim:IdentifiedObject.name>\r\n";
-                xml += "  <cim:RegulatingControl.mode rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage' />\r\n";
-                xml += "  <cim:RegulatingControl.Terminal rdf:resource='#_" + ptEnd.Terminal.@ref + "'/>\r\n";
+               xml = "<cim:TapChangerControl rdf:ID = '_" + controlMrid.ToString() + "'>\r\n";
+               xml += "  <cim:IdentifiedObject.name>Tab Controler</cim:IdentifiedObject.name>\r\n";
+               xml += "  <cim:RegulatingControl.mode rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#RegulatingControlModeKind.voltage' />\r\n";
+               xml += "  <cim:RegulatingControl.Terminal rdf:resource='#_" + ptEnd.Terminal.@ref + "'/>\r\n";
 
-                xml += "</cim:TapChangerControl>\r\n\r\n";
-            }
-
-            _writer.Write(HttpUtility.HtmlEncode(xml));
+               xml += "</cim:TapChangerControl>\r\n\r\n";
+           }
+           */
+          
         }
 
         private string GetBaseVoltageId(double voltageLevel)

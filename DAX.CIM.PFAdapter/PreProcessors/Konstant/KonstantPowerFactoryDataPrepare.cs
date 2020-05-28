@@ -122,11 +122,6 @@ namespace DAX.CIM.PFAdapter
                 // Prefix energy consumers with "l_"
                 if (inputCimObject is EnergyConsumer)
                 {
-                    if (inputCimObject.name == "571313124501006982")
-                    {
-
-                    }
-
                     if (inputCimObject.name != null)
                         inputCimObject.name = "l_" + inputCimObject.name;
                 }
@@ -269,6 +264,10 @@ namespace DAX.CIM.PFAdapter
                 {
                     var ptEnd = inputCimObject as PowerTransformerEndExt;
 
+                    var pt = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
+
+                    ptEnd.name = pt.Substation.name + "_" + pt.name + "_T" + ptEnd.endNumber;
+
                     if (ptEnd.endNumber == "1")
                     {
                         if (ptEnd.ratedU == null ||
@@ -282,9 +281,8 @@ namespace DAX.CIM.PFAdapter
                         }
                         else
                         {
-                            var pt = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
-
-                            
+                            /* tages fra access nu
+                             * 
                             // Beregn r: loss * (ratedU / ratedS * 1000)^2
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
 
@@ -312,12 +310,7 @@ namespace DAX.CIM.PFAdapter
                                )
                             };
 
-
-
-                            if (pt.mRID == "EB6178A6-7C04-4768-89B8-7F2EE2CCE662")
-                            {
-                            }
-
+                            */
                         }
                     }
 
@@ -372,7 +365,7 @@ namespace DAX.CIM.PFAdapter
                                 // Terminal actual exist in source, but get trown away in filter, because nothing connected to it
                                 var ptConnections = context.GetConnections(pt);
 
-                                var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.name  };
+                                var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(400) + "_" + pt.name.Replace("TRF", "") };
                                 addList.Add(ptLvCn);
                                 
                                 if (stVoltageLevels.Exists(o => o.BaseVoltage == 400))

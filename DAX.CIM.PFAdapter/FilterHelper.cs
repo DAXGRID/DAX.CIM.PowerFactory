@@ -86,7 +86,14 @@ namespace DAX.CIM.PFAdapter
                                 
                                 // put injection inside substation
                                 eni.BaseVoltage = ce.BaseVoltage;
-                                eni.EquipmentContainer = new EquipmentEquipmentContainer() {  @ref = context.GetObject<Bay>(ce.EquipmentContainer.@ref).VoltageLevel.@ref };
+                                if (ce is BusbarSection)
+                                {
+                                    eni.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = context.GetObject<VoltageLevel>(ce.EquipmentContainer.@ref).mRID };
+                                }
+                                else
+                                {
+                                    eni.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = context.GetObject<Bay>(ce.EquipmentContainer.@ref).VoltageLevel.@ref };
+                                }
                             }
                         }
 

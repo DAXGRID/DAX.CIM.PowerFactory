@@ -54,8 +54,10 @@ namespace DAX.CIM.PFAdapter
                         // acls <-> acls
                         if (cnNeighborsx.Count(o => o is ACLineSegmentExt) == 2)
                         {
-                            var acls1 = cnNeighborsx[0] as ACLineSegment;
-                            var acls2 = cnNeighborsx[1] as ACLineSegment;
+                            var acls = cnNeighborsx.Where(o => o is ACLineSegmentExt).ToList();
+
+                            var acls1 = acls[0] as ACLineSegment;
+                            var acls2 = acls[1] as ACLineSegment;
 
                             // NEVER MERGE
                             bool theSame = false;
