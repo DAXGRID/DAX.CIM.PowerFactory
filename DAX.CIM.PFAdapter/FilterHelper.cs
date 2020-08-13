@@ -153,6 +153,12 @@ namespace DAX.CIM.PFAdapter
                             {
                                 var ec = cimObject as EnergyConsumer;
 
+
+                                if (ec.name == "571313124501138119")
+                                {
+
+                                }
+
                                 var ecAclsNeighbors = context.GetNeighborConductingEquipments(ec).Where(c => c is ACLineSegment).ToList();
 
                                 if (ecAclsNeighbors.Count == 1)
@@ -173,7 +179,22 @@ namespace DAX.CIM.PFAdapter
 
                                             context.ConnectTerminalToAnotherConnectitityNode(ecTerminal, trafoTerminal2Cn);
 
-                                            ec.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = trafo.EquipmentContainer.@ref };
+                                            var ptSt = trafo.GetSubstation(false, context);
+
+                                            if (ptSt != null)
+                                            {
+                                                var stVls = context.GetSubstationVoltageLevels(ptSt);
+
+                                                var vl = stVls.Find(o => o.BaseVoltage == ec.BaseVoltage);
+
+                                                if (vl != null)
+                                                {
+                                                    ec.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = vl.mRID };
+                                                }
+
+                                            }
+
+                                            //ec.EquipmentContainer = new EquipmentEquipmentContainer() { @ref = trafo.EquipmentContainer.@ref };
 
                                         }
 
@@ -182,6 +203,7 @@ namespace DAX.CIM.PFAdapter
                                 else if (ecAclsNeighbors.Count > 1)
                                 {
                                     Logger.Log(LogLevel.Warning, "Cannot convert: " + ec.name + " multiply cables connected to customer. Must be modelled in PF.");
+                                    continue;
                                 }
                             }
 

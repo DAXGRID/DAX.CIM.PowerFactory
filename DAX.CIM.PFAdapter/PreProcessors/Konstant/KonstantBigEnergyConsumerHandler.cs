@@ -37,7 +37,7 @@ namespace DAX.CIM.PFAdapter
             {
                 if (inputCimObject is EnergyConsumer)
                 {
-                   if (inputCimObject.name == "571313124501006982")
+                   if (inputCimObject.name == "571313124501138119")
                     {
 
                     }

@@ -124,9 +124,54 @@ namespace DAX.CIM.PFAdapter
                 {
                     if (inputCimObject.name != null)
                         inputCimObject.name = "l_" + inputCimObject.name;
+
+                    if (inputCimObject.name.Contains("571313124503001411"))
+                    {
+
+                    }
                 }
 
-                // Check that current transformer has currents 
+                // Remove switch gear busbar asset model information (because PF complain about missing type, and Konstant/Thue says he don't want types into PF for now
+                if (inputCimObject is BusbarSectionInfo)
+                {
+                    //dropList.Add(inputCimObject);
+
+                    BusbarSectionInfo bsi = inputCimObject as BusbarSectionInfo;
+                    bsi.AssetModel = null;
+
+                    var assetMrid = assetInfoToAssetRef[inputCimObject.mRID];
+                    var asset = context.GetObject<PhysicalNetworkModel.Asset>(assetMrid);
+                    asset.type = null;
+                    asset.name = null;
+                    asset.AssetModel = null;
+                }
+
+                // Remove asset manufacture information on busbars and switches
+                if (inputCimObject is BusbarSection || inputCimObject is Switch)
+                {
+                    ConductingEquipment ci = inputCimObject as ConductingEquipment;
+                    var asset = context.GetObject<PhysicalNetworkModel.Asset>(ci.Assets.@ref);
+                    asset.type = null;
+                    asset.name = null;
+                    asset.AssetModel = null;
+                }
+
+                // Remove current transformer sitting on voltage level < 60 kV
+                if (inputCimObject is CurrentTransformer)
+                {
+                    var ct = inputCimObject as CurrentTransformer;
+
+                    var ctTerminal = context.GetObject<Terminal>(ct.Terminal.@ref);
+
+                    var ctEq = context.GetObject<ConductingEquipment>(ctTerminal.ConductingEquipment.@ref);
+
+                    if (ctEq.BaseVoltage < 60000)
+                    {
+                        dropList.Add(ct);
+                    }
+                }
+
+                // Check that current transformer infos has currents 
                 if (inputCimObject is CurrentTransformerInfoExt)
                 {
                     var ctInfo = inputCimObject as CurrentTransformerInfoExt;
@@ -170,7 +215,22 @@ namespace DAX.CIM.PFAdapter
                     }
                 }
 
-                // Check that potential transformer has voltages
+                // Remove potential transformers sitting on voltage level < 60 kV
+                if (inputCimObject is PotentialTransformer)
+                {
+                    var pt = inputCimObject as PotentialTransformer;
+
+                    var ptTerminal = context.GetObject<Terminal>(pt.Terminal.@ref);
+
+                    var ptEq = context.GetObject<ConductingEquipment>(ptTerminal.ConductingEquipment.@ref);
+
+                    if (ptEq.BaseVoltage < 60000)
+                    {
+                        dropList.Add(pt);
+                    }
+                }
+
+                // Check that potential transformer info has voltages
                 if (inputCimObject is PotentialTransformerInfoExt)
                 {
                     var vtInfo = inputCimObject as PotentialTransformerInfoExt;
@@ -190,21 +250,24 @@ namespace DAX.CIM.PFAdapter
                         var stName = vt.GetSubstation(true, context).name;
                         var bayName = vt.GetBay(true, context).name;
 
-                        Logger.Log(LogLevel.Warning, "VT Missing primary voltage. VT will not be transfered to PF: " + stName + " " + bayName);
+                        Logger.Log(LogLevel.Warning, "VT Missing primary voltage. VT will not be transfered to PF." + stName + " " + bayName);
 
                         dropList.Add(vt);
                         dropList.Add(vtAsset);
                         dropList.Add(vtInfo);
                     }
-
-                    if (vtInfo.secondaryVoltage == null)
+                    else if (vtInfo.secondaryVoltage == null)
                     {
                         vtInfo.secondaryVoltage = new Voltage() { Value = 0, unit = UnitSymbol.V };
 
                         var stName = vt.GetSubstation(true, context).name;
                         var bayName = vt.GetBay(true, context).name;
 
-                        Logger.Log(LogLevel.Warning, "VT Missing secondary voltage: " + stName + " " + bayName);
+                        Logger.Log(LogLevel.Warning, "VT Missing secondary voltage. VI will not be transfered to PF." + stName + " " + bayName);
+
+                        dropList.Add(vt);
+                        dropList.Add(vtAsset);
+                        dropList.Add(vtInfo);
                     }
                 }
 
@@ -259,7 +322,7 @@ namespace DAX.CIM.PFAdapter
                     }
                 }
              
-                // Beregn r,x,b og g på trafo'er jf. opskrift fra DigSILENT/Anja (se dokument 
+                // Beregn r,x,b og g på trafo'er jf. opskrift fra DigSILENT/Anja (se dokument fra DigSILENT) 
                 if (inputCimObject is PowerTransformerEndExt)
                 {
                     var ptEnd = inputCimObject as PowerTransformerEndExt;
@@ -270,6 +333,9 @@ namespace DAX.CIM.PFAdapter
 
                     if (ptEnd.endNumber == "1")
                     {
+                        ptEnd.b0 = new Susceptance() { Value = 0 };
+                        ptEnd.g0 = new Conductance() { Value = 0 };
+
                         if (ptEnd.ratedU == null ||
                             ptEnd.ratedS == null ||
                             ptEnd.excitingCurrentZero == null ||
@@ -281,6 +347,16 @@ namespace DAX.CIM.PFAdapter
                         }
                         else
                         {
+
+                            /* forsøg 
+                            if (ptEnd.b != null)
+                                ptEnd.b0 =new Susceptance () { Value = ptEnd.b.Value };
+
+                            if (ptEnd.g != null)
+                                ptEnd.g0 = new Conductance { Value = ptEnd.g.Value };
+
+                            */
+
                             /* tages fra access nu
                              * 
                             // Beregn r: loss * (ratedU / ratedS * 1000)^2
@@ -335,9 +411,15 @@ namespace DAX.CIM.PFAdapter
                 }
 
                 // Ensure bay name is max 32 charaters
-                if (inputCimObject is Bay && inputCimObject.name != null && inputCimObject.name.Length > 32)
+                if (inputCimObject is IdentifiedObject && inputCimObject.name != null && inputCimObject.name.Length > 32)
                 {
                     inputCimObject.name = inputCimObject.name.Substring(0, 32);
+                }
+
+                // Set name of disconnectors to ADSK
+                if (inputCimObject is Disconnector)
+                {
+                    inputCimObject.name = "ADSK";
                 }
 
                 // Ensure connectivity nodes / busbars have proper names. 

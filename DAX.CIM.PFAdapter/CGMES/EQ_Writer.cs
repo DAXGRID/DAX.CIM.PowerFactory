@@ -69,6 +69,11 @@ namespace DAX.CIM.PFAdapter.CGMES
     <cim:BaseVoltage.nominalVoltage>15.2</cim:BaseVoltage.nominalVoltage>
   </cim:BaseVoltage>
 
+  <cim:BaseVoltage rdf:ID='_4eb4495e-ddff-4fd9-85d6-c09c2486ac9a'>
+    <cim:IdentifiedObject.name>30.00</cim:IdentifiedObject.name>
+    <cim:BaseVoltage.nominalVoltage>33</cim:BaseVoltage.nominalVoltage>
+  </cim:BaseVoltage>
+
   <cim:BaseVoltage rdf:ID='_60ee59f3-5ed7-4551-b623-f4346554b22a'>
     <cim:IdentifiedObject.name>60.00</cim:IdentifiedObject.name>
     <cim:BaseVoltage.nominalVoltage>64</cim:BaseVoltage.nominalVoltage>
@@ -597,34 +602,37 @@ namespace DAX.CIM.PFAdapter.CGMES
                 xml += "  <cim:TransformerEnd.grounded>false</cim:TransformerEnd.grounded>\r\n";
 
             if (end.b != null)
-                xml += "  <cim:PowerTransformerEnd.b>"+ end.b.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.b>\r\n";
+                xml += "  <cim:PowerTransformerEnd.b>" + DoubleToString(end.b.Value) + "</cim:PowerTransformerEnd.b>\r\n";
 
             if (end.b0 != null)
-                xml += "  <cim:PowerTransformerEnd.b0>" + end.b0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.b0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.b0>" + DoubleToString(end.b0.Value) + "</cim:PowerTransformerEnd.b0>\r\n";
 
             if (end.g != null)
-                xml += "  <cim:PowerTransformerEnd.g>" + end.g.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.g>\r\n";
+                xml += "  <cim:PowerTransformerEnd.g>" + DoubleToString(end.g.Value) + "</cim:PowerTransformerEnd.g>\r\n";
 
             if (end.g0 != null)
-                xml += "  <cim:PowerTransformerEnd.g0>" + end.g0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.g0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.g0>" + DoubleToString(end.g0.Value) + "</cim:PowerTransformerEnd.g0>\r\n";
 
             if (end.r != null)
-                xml += "  <cim:PowerTransformerEnd.r>" + end.r.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.r>\r\n";
+                xml += "  <cim:PowerTransformerEnd.r>" + DoubleToString(end.r.Value) + "</cim:PowerTransformerEnd.r>\r\n";
 
             if (end.r0 != null)
-                xml += "  <cim:PowerTransformerEnd.r0>" + end.r0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.r0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.r0>" + DoubleToString(end.r0.Value) + "</cim:PowerTransformerEnd.r0>\r\n";
 
             if (end.x != null)
-                xml += "  <cim:PowerTransformerEnd.x>" + end.x.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.x>\r\n";
+                xml += "  <cim:PowerTransformerEnd.x>" + DoubleToString(end.x.Value) + "</cim:PowerTransformerEnd.x>\r\n";
 
             if (end.x0 != null)
-                xml += "  <cim:PowerTransformerEnd.x0>" + end.x0.Value.ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.x0>\r\n";
+                xml += "  <cim:PowerTransformerEnd.x0>" + DoubleToString(end.x0.Value) + "</cim:PowerTransformerEnd.x0>\r\n";
+
+            //xml += "  <cim:PowerTransformerEnd.g0>0</cim:PowerTransformerEnd.g0>\r\n";
+            //xml += "  <cim:PowerTransformerEnd.b0>0</cim:PowerTransformerEnd.b0>\r\n";
 
             if (end.ratedU != null)
-                xml += "  <cim:PowerTransformerEnd.ratedU>" + (end.ratedU.Value / 1000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedU>\r\n";
+                xml += "  <cim:PowerTransformerEnd.ratedU>" + DoubleToString(end.ratedU.Value / 1000) + "</cim:PowerTransformerEnd.ratedU>\r\n";
 
             if (end.ratedS != null)
-                xml += "  <cim:PowerTransformerEnd.ratedS>" + (end.ratedS.Value / 1000).ToString(CultureInfo.InvariantCulture) + "</cim:PowerTransformerEnd.ratedS>\r\n";
+                xml += "  <cim:PowerTransformerEnd.ratedS>" + DoubleToString(end.ratedS.Value / 1000) + "</cim:PowerTransformerEnd.ratedS>\r\n";
 
 
             xml += "</cim:PowerTransformerEnd>\r\n\r\n";
@@ -738,7 +746,7 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         private string DoubleToString(double value)
         {
-            return value.ToString(CultureInfo.GetCultureInfo("en-GB"));
+            return value.ToString("0.0#########",CultureInfo.GetCultureInfo("en-GB"));
         }
 
         private double ConvertToEntsoeVoltage(double value)
