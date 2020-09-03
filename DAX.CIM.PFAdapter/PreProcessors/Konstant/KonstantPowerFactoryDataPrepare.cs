@@ -91,7 +91,14 @@ namespace DAX.CIM.PFAdapter
                     if (coil.Asset != null && coil.Asset.AssetInfo != null && coil.Asset.AssetInfo.@ref != null)
                     {
                         var coilInfo = context.GetObject<PetersenCoilInfoExt>(coil.Asset.AssetInfo.@ref);
-                        coil.name = st.name + " " + coil.name + " " + (int)coilInfo.minimumCurrent.Value + "-" + (int)coilInfo.maximumCurrent.Value;
+
+                        coil.name = st.name + " " + coil.name;
+
+                        if (coilInfo != null && coilInfo.minimumCurrent != null && coilInfo.maximumCurrent != null)
+                            coil.name += " " + (int)coilInfo?.minimumCurrent?.Value + "-" + (int)coilInfo?.maximumCurrent?.Value;
+                        else
+                            Logger.Log(LogLevel.Warning, "Spole på station: " + st.name + " mangler værdier.");
+
                     }
                     else
                         coil.name = st.name + " " + coil.name + " 0-0";
@@ -439,38 +446,69 @@ namespace DAX.CIM.PFAdapter
                         if (pt != null)
                         {
                             var stVoltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
-                  
+
                             // Local trafo secondary side node hack
-                            if (pt.name != null && pt.name.ToLower().Contains("lokal"))
+                            // gør for all trafo'er
+                            //  && pt.name.ToLower().Contains("lokal")
+                            if (pt.name != null)
                             {
                                 // HACK SHOULD BE CLEANED UP
                                 // Terminal actual exist in source, but get trown away in filter, because nothing connected to it
                                 var ptConnections = context.GetConnections(pt);
 
-                                var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(400) + "_" + pt.name.Replace("TRF", "") };
-                                addList.Add(ptLvCn);
-                                
-                                if (stVoltageLevels.Exists(o => o.BaseVoltage == 400))
+                                // DNU trafo
+                                if (pt.Substation.name == "2855")
                                 {
-                                    var vl = stVoltageLevels.First(o => o.BaseVoltage == 400);
 
-                                    _mappingContext.ConnectivityNodeToVoltageLevel.Add(ptLvCn, vl);
                                 }
 
-                                var ptLvTerminal = new Terminal()
+                                if (!ptConnections.Exists(c => c.Terminal.sequenceNumber == "2"))
                                 {
-                                    mRID = Guid.NewGuid().ToString(),
-                                    phases = PhaseCode.ABCN,
-                                    phasesSpecified = true,
-                                    sequenceNumber = "2",
-                                    ConnectivityNode = new TerminalConnectivityNode() { @ref = ptLvCn.mRID },
-                                    ConductingEquipment = new TerminalConductingEquipment { @ref = pt.mRID }
-                                };
+                                    Logger.Log(LogLevel.Info, "Station: " + pt.Substation.name + " Trafo: " + pt.name + " mangler secondær skinne. Vil bliver oprettet");
 
-                                var ptEnd = context.GetPowerTransformerEnds(pt).First(p => p.endNumber == "2");
-                                ptEnd.Terminal = new TransformerEndTerminal() {  @ref = ptLvTerminal.mRID };
+                                   
+                                    var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(400) + "_" + pt.name.Replace("TRF", "") };
 
-                                addList.Add(ptLvTerminal);
+                                    addList.Add(ptLvCn);
+
+                                    if (stVoltageLevels.Exists(o => o.BaseVoltage == 400))
+                                    {
+                                        var vl = stVoltageLevels.First(o => o.BaseVoltage == 400);
+                                  
+                                        _mappingContext.ConnectivityNodeToVoltageLevel.Add(ptLvCn, vl);
+                                    }
+                                    else
+                                    {
+
+                                        var vl = new DAX.CIM.PhysicalNetworkModel.VoltageLevel()
+                                        {
+                                            mRID = Guid.NewGuid().ToString(),
+                                            name = "0,4 kV",
+                                            EquipmentContainer1 = new VoltageLevelEquipmentContainer() { @ref = pt.Substation.mRID },
+                                            BaseVoltage = 400
+                                        };
+
+                                        addList.Add(vl);
+
+                                        stVoltageLevels.Add(vl);
+                                        _mappingContext.ConnectivityNodeToVoltageLevel.Add(ptLvCn, vl);
+                                    }
+
+                                    var ptLvTerminal = new Terminal()
+                                    {
+                                        mRID = Guid.NewGuid().ToString(),
+                                        phases = PhaseCode.ABCN,
+                                        phasesSpecified = true,
+                                        sequenceNumber = "2",
+                                        ConnectivityNode = new TerminalConnectivityNode() { @ref = ptLvCn.mRID },
+                                        ConductingEquipment = new TerminalConductingEquipment { @ref = pt.mRID }
+                                    };
+
+                                    var ptEnd = context.GetPowerTransformerEnds(pt).First(p => p.endNumber == "2");
+                                    ptEnd.Terminal = new TransformerEndTerminal() { @ref = ptLvTerminal.mRID };
+
+                                    addList.Add(ptLvTerminal);
+                                }
                             }
 
                             var voltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
