@@ -456,12 +456,6 @@ namespace DAX.CIM.PFAdapter
                                 // Terminal actual exist in source, but get trown away in filter, because nothing connected to it
                                 var ptConnections = context.GetConnections(pt);
 
-                                // DNU trafo
-                                if (pt.Substation.name == "2855")
-                                {
-
-                                }
-
                                 if (!ptConnections.Exists(c => c.Terminal.sequenceNumber == "2"))
                                 {
                                     Logger.Log(LogLevel.Info, "Station: " + pt.Substation.name + " Trafo: " + pt.name + " mangler secondær skinne. Vil bliver oprettet");
