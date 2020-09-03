@@ -191,12 +191,12 @@ namespace DAX.CIM.PFAdapter
                     if (ct.PSRType != null && ct.PSRType == "StromTransformer")
                     {
                         // Make sure primary and secondary current is set, because otherwise PF import fails
-                        if (ctInfo.primaryCurrent == null )
+                        if (ctInfo.primaryCurrent == null)
                         {
                             var stName = ct.GetSubstation(true, context).name;
                             var bayName = ct.GetBay(true, context).name;
 
-                            Logger.Log(LogLevel.Warning,"CT Missing primary current. Will not be transfered to PF: " + stName + " " + bayName);
+                            Logger.Log(LogLevel.Warning, "CT Missing primary current. Will not be transfered to PF: " + stName + " " + bayName);
                             ctInfo.primaryCurrent = new CurrentFlow() { Value = 0, unit = UnitSymbol.A };
 
                             dropList.Add(ct);
@@ -247,7 +247,7 @@ namespace DAX.CIM.PFAdapter
 
                     var vtAsset = context.GetObject<PhysicalNetworkModel.Asset>(assetMrid);
                     var vt = context.GetObject<PotentialTransformer>(eqMrid);
-                    var vtSt = vt.GetSubstation(true, context); 
+                    var vtSt = vt.GetSubstation(true, context);
 
                     // Make sure primary and secondary voltage is set, because otherwise PF import fails
                     if (vtInfo.primaryVoltage == null)
@@ -328,7 +328,7 @@ namespace DAX.CIM.PFAdapter
                         acls.g0ch = new Conductance() { Value = 0 };
                     }
                 }
-             
+
                 // Beregn r,x,b og g på trafo'er jf. opskrift fra DigSILENT/Anja (se dokument fra DigSILENT) 
                 if (inputCimObject is PowerTransformerEndExt)
                 {
@@ -429,6 +429,12 @@ namespace DAX.CIM.PFAdapter
                     inputCimObject.name = "ADSK";
                 }
 
+                // Set name of disconnectors to ADSK
+                if (inputCimObject is Fuse)
+                {
+                    inputCimObject.name = "SIKRING";
+                }
+
                 // Ensure connectivity nodes / busbars have proper names. 
                 // Needed by Konstant to support result extracts etc. PF uses the name of the node/busbar in reports.
                 // Also needed to support time series import (Jakob skinne navngivning)
@@ -438,11 +444,11 @@ namespace DAX.CIM.PFAdapter
 
                     if (cn.name == null || cn.name.Length == 0)
                     {
-                        var neighboords = cn.GetNeighborConductingEquipments(context);
+                        var cnNeighbors = cn.GetNeighborConductingEquipments(context);
 
-                        var pt = neighboords.Find(o => o is PowerTransformer) as PowerTransformer;
-                        var bus = neighboords.Find(o => o is BusbarSection);
-                       
+                        var pt = cnNeighbors.Find(o => o is PowerTransformer) as PowerTransformer;
+                        var bus = cnNeighbors.Find(o => o is BusbarSection);
+
                         if (pt != null)
                         {
                             var stVoltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
@@ -460,7 +466,7 @@ namespace DAX.CIM.PFAdapter
                                 {
                                     Logger.Log(LogLevel.Info, "Station: " + pt.Substation.name + " Trafo: " + pt.name + " mangler secondær skinne. Vil bliver oprettet");
 
-                                   
+
                                     var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(400) + "_" + pt.name.Replace("TRF", "") };
 
                                     addList.Add(ptLvCn);
@@ -468,7 +474,7 @@ namespace DAX.CIM.PFAdapter
                                     if (stVoltageLevels.Exists(o => o.BaseVoltage == 400))
                                     {
                                         var vl = stVoltageLevels.First(o => o.BaseVoltage == 400);
-                                  
+
                                         _mappingContext.ConnectivityNodeToVoltageLevel.Add(ptLvCn, vl);
                                     }
                                     else
@@ -509,9 +515,9 @@ namespace DAX.CIM.PFAdapter
 
                             double voltageLevel = 400;
 
-                            if (neighboords.Exists(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0))
+                            if (cnNeighbors.Exists(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0))
                             {
-                                voltageLevel = neighboords.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
+                                voltageLevel = cnNeighbors.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
 
                                 var ptConnections = context.GetConnections(pt);
                                 var ptTerminal = ptConnections.First(c => c.ConnectivityNode == cn);
@@ -535,7 +541,7 @@ namespace DAX.CIM.PFAdapter
 
                             // Hvis trafo deler node med skinne, eller node er 400 volt, så brug jakob navngivning
                             if (bus != null || voltageLevel == 400)
-                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" +pt.name.Replace("TRF","");
+                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name.Replace("TRF", "");
                             else
                                 cn.name = "CN";
 
@@ -544,11 +550,23 @@ namespace DAX.CIM.PFAdapter
                             //else
                             //    cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name;
 
-                       }
+                        }
                         else if (bus != null && bus.name != null)
                             cn.name = bus.name;
                         else
-                            cn.name = "CN";
+                        {
+                            var bay = cn.GetBay(false, context);
+
+                            if (bay != null)
+                            {
+                                if (cnNeighbors.Count == 1 || cnNeighbors.Exists(n => !(n is Switch)))
+                                    cn.name = bay.name + " ENDE";
+                                else
+                                    cn.name = bay.name;
+                            }
+                            else
+                                cn.name = "CN";
+                        }
                     }
                 }
             }
