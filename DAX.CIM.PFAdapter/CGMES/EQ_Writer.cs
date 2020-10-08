@@ -422,6 +422,39 @@ namespace DAX.CIM.PFAdapter.CGMES
             _writer.Write(xml);
         }
 
+        public void AddPNMObject(PhysicalNetworkModel.LinearShuntCompensator compensator)
+        {
+            string xml = "<cim:LinearShuntCompensator rdf:ID='_" + compensator.mRID + "'>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(compensator.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + compensator.EquipmentContainer.@ref + "'/>\r\n";
+            xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(compensator.BaseVoltage) + "'/>\r\n";
+
+            if (compensator.nomU != null)
+                xml += "  <cim:ShuntCompensator.nomU>" + DoubleToString(ConvertToEntsoeVoltage(compensator.nomU.Value)) + "</cim:ShuntCompensator.nomU>\r\n";
+
+            if (compensator.maximumSections != null)
+                xml += "  <cim:ShuntCompensator.maximumSections>" + compensator.maximumSections + "</cim:ShuntCompensator.maximumSections>\r\n";
+
+            if (compensator.normalSections != null)
+                xml += "  <cim:ShuntCompensator.normalSections>" + compensator.normalSections + "</cim:ShuntCompensator.normalSections>\r\n";
+        
+            if (compensator.bPerSection != null)
+                xml += "  <cim:LinearShuntCompensator.bPerSection>" + DoubleToString(compensator.bPerSection.Value) + "</cim:LinearShuntCompensator.bPerSection>\r\n";
+
+            if (compensator.gPerSection != null)
+                xml += "  <cim:LinearShuntCompensator.gPerSection>" + DoubleToString(compensator.gPerSection.Value) + "</cim:LinearShuntCompensator.gPerSection>\r\n";
+
+            if (compensator.b0PerSection != null)
+                xml += "  <cim:LinearShuntCompensator.b0PerSection>" + DoubleToString(compensator.b0PerSection.Value) + "</cim:LinearShuntCompensator.b0PerSection>\r\n";
+
+            if (compensator.g0PerSection != null)
+                xml += "  <cim:LinearShuntCompensator.g0PerSection>" + DoubleToString(compensator.gPerSection.Value) + "</cim:LinearShuntCompensator.gPerSection>\r\n";
+
+
+            xml += "</cim:LinearShuntCompensator>\r\n\r\n";
+            _writer.Write(xml);
+        }
+
 
         public void AddPNMObject(PhysicalNetworkModel.BusbarSection busbar)
         {

@@ -71,8 +71,6 @@ namespace DAX.CIM.PFAdapter
                 {
                     var bus = inputCimObject as BusbarSection;
 
-                    //var vl = context.GetObject<VoltageLevel>(bus.EquipmentContainer.@ref);
-
                     var st = bus.GetSubstation(true, context);
 
                     bus.name = st.name + "_" + GetVoltageLevelStr(bus.BaseVoltage) + "_" + bus.name;
@@ -98,7 +96,6 @@ namespace DAX.CIM.PFAdapter
                             coil.name += " " + (int)coilInfo?.minimumCurrent?.Value + "-" + (int)coilInfo?.maximumCurrent?.Value;
                         else
                             Logger.Log(LogLevel.Warning, "Spole på station: " + st.name + " mangler værdier.");
-
                     }
                     else
                         coil.name = st.name + " " + coil.name + " 0-0";
@@ -117,6 +114,7 @@ namespace DAX.CIM.PFAdapter
                         dropList.Add(inj);
 
                         var injConnections = context.GetConnections(inj);
+
                         foreach (var injCon in injConnections)
                             dropList.Add(injCon.Terminal);
                     }
@@ -131,18 +129,11 @@ namespace DAX.CIM.PFAdapter
                 {
                     if (inputCimObject.name != null)
                         inputCimObject.name = "l_" + inputCimObject.name;
-
-                    if (inputCimObject.name.Contains("571313124503001411"))
-                    {
-
-                    }
                 }
 
                 // Remove switch gear busbar asset model information (because PF complain about missing type, and Konstant/Thue says he don't want types into PF for now
                 if (inputCimObject is BusbarSectionInfo)
                 {
-                    //dropList.Add(inputCimObject);
-
                     BusbarSectionInfo bsi = inputCimObject as BusbarSectionInfo;
                     bsi.AssetModel = null;
 
@@ -212,7 +203,6 @@ namespace DAX.CIM.PFAdapter
                             Logger.Log(LogLevel.Warning, "CT Missing secondary current: " + stName + " " + bayName);
                             ctInfo.secondaryCurrent = new CurrentFlow() { Value = 0, unit = UnitSymbol.A };
                         }
-
                     }
                     else
                     {
@@ -329,7 +319,7 @@ namespace DAX.CIM.PFAdapter
                     }
                 }
 
-                // Beregn r,x,b og g på trafo'er jf. opskrift fra DigSILENT/Anja (se dokument fra DigSILENT) 
+                // Sæt transformer vikling navn og r,x,b,g værdier på vikling 2 til 0 
                 if (inputCimObject is PowerTransformerEndExt)
                 {
                     var ptEnd = inputCimObject as PowerTransformerEndExt;
@@ -338,6 +328,7 @@ namespace DAX.CIM.PFAdapter
 
                     ptEnd.name = pt.Substation.name + "_" + pt.name + "_T" + ptEnd.endNumber;
 
+                    /* Don't calculate r,x,b,g anymore.
                     if (ptEnd.endNumber == "1")
                     {
                         ptEnd.b0 = new Susceptance() { Value = 0 };
@@ -354,18 +345,6 @@ namespace DAX.CIM.PFAdapter
                         }
                         else
                         {
-
-                            /* forsøg 
-                            if (ptEnd.b != null)
-                                ptEnd.b0 =new Susceptance () { Value = ptEnd.b.Value };
-
-                            if (ptEnd.g != null)
-                                ptEnd.g0 = new Conductance { Value = ptEnd.g.Value };
-
-                            */
-
-                            /* tages fra access nu
-                             * 
                             // Beregn r: loss * (ratedU / ratedS * 1000)^2
                             ptEnd.r = new Resistance() { Value = ptEnd.loss.Value * Math.Pow((ptEnd.ratedU.Value / (ptEnd.ratedS.Value * 1000)), 2) };
 
@@ -392,10 +371,9 @@ namespace DAX.CIM.PFAdapter
                                     Math.Pow(zk, 2) - Math.Pow(ptEnd.r.Value, 2)
                                )
                             };
-
-                            */
                         }
                     }
+                    */
 
                     if (ptEnd.endNumber == "2")
                     {
@@ -411,7 +389,7 @@ namespace DAX.CIM.PFAdapter
                     }
                 }
 
-                // Remove trf from transformer name
+                // Remove 'TRF' from transformer name
                 if (inputCimObject is PowerTransformer)
                 {
                     inputCimObject.name = inputCimObject.name.Replace("TRF", "");
@@ -436,8 +414,8 @@ namespace DAX.CIM.PFAdapter
                 }
 
                 // Ensure connectivity nodes / busbars have proper names. 
-                // Needed by Konstant to support result extracts etc. PF uses the name of the node/busbar in reports.
-                // Also needed to support time series import (Jakob skinne navngivning)
+                // Needed by Konstant to support short circuit result extracts etc. PF uses the name of the node/busbar in reports.
+                // Also needed to support time series import (Jakob busbar naming)
                 if (inputCimObject is ConnectivityNode)
                 {
                     var cn = inputCimObject as ConnectivityNode;
@@ -453,9 +431,6 @@ namespace DAX.CIM.PFAdapter
                         {
                             var stVoltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
 
-                            // Local trafo secondary side node hack
-                            // gør for all trafo'er
-                            //  && pt.name.ToLower().Contains("lokal")
                             if (pt.name != null)
                             {
                                 // HACK SHOULD BE CLEANED UP
@@ -465,7 +440,6 @@ namespace DAX.CIM.PFAdapter
                                 if (!ptConnections.Exists(c => c.Terminal.sequenceNumber == "2"))
                                 {
                                     Logger.Log(LogLevel.Info, "Station: " + pt.Substation.name + " Trafo: " + pt.name + " mangler secondær skinne. Vil bliver oprettet");
-
 
                                     var ptLvCn = new ConnectivityNode() { mRID = Guid.NewGuid().ToString(), name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(400) + "_" + pt.name.Replace("TRF", "") };
 
@@ -479,7 +453,6 @@ namespace DAX.CIM.PFAdapter
                                     }
                                     else
                                     {
-
                                         var vl = new DAX.CIM.PhysicalNetworkModel.VoltageLevel()
                                         {
                                             mRID = Guid.NewGuid().ToString(),
@@ -544,12 +517,6 @@ namespace DAX.CIM.PFAdapter
                                 cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name.Replace("TRF", "");
                             else
                                 cn.name = "CN";
-
-                            // JL: Fjernet fordi Thue vil ikke have 10/15 kV trafo noder navngivet
-                            // ellers så brug gis/cim trafo navngivning (TRF..), for at undgå dublet i node navn
-                            //else
-                            //    cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name;
-
                         }
                         else if (bus != null && bus.name != null)
                             cn.name = bus.name;

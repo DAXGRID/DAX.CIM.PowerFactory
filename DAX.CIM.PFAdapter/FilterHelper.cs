@@ -58,7 +58,8 @@ namespace DAX.CIM.PFAdapter
                     cimObject is PhysicalNetworkModel.CurrentTransformer ||
                     cimObject is PhysicalNetworkModel.PotentialTransformer ||
                     cimObject is PhysicalNetworkModel.EnergyConsumer ||
-                    cimObject is PhysicalNetworkModel.RatioTapChanger /* ||
+                    cimObject is PhysicalNetworkModel.RatioTapChanger ||
+                    cimObject is PhysicalNetworkModel.LinearShuntCompensator/* ||
                     cimObject is PhysicalNetworkModel.Asset ||
                     cimObject is PhysicalNetworkModel.AssetInfo ||
                     cimObject is PhysicalNetworkModel.ProductAssetModel ||
@@ -287,10 +288,21 @@ namespace DAX.CIM.PFAdapter
                             // If min voltagelevel > 400, don't include cable boxes and stuff inside cable boxes
                             if (rule.MinVoltageLevel > 400
                                 && partOfSt != null
-                                && partOfSt.PSRType == "CableBox")
+                                && 
+                                (partOfSt.PSRType == "CableBox" || partOfSt.PSRType == "T-Junction"))
                             {
                                 continue;
                             }
+
+                            if (rule.MinVoltageLevel > 400
+                               && partOfSt != null
+                               && partOfSt.PSRType == "Tower"
+                               && partOfSt.GetPrimaryVoltageLevel(context) < 1000)
+                            {
+                                continue;
+                            }
+
+
 
                             // don't add voltage level, we do this later
                             if (cimObject is VoltageLevel)
