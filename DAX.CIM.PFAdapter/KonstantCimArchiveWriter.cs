@@ -22,7 +22,7 @@ namespace DAX.CIM.PFAdapter
     /// </summary>
     public class KonstantCimArchiveWriter
     {
-        public KonstantCimArchiveWriter(IEnumerable<PhysicalNetworkModel.IdentifiedObject> cimObjects, string outputFolder, string archiveName, Guid modelRdfId)
+        public KonstantCimArchiveWriter(IEnumerable<PhysicalNetworkModel.IdentifiedObject> cimObjects, string outputFolder, string archiveName, Guid modelRdfId, bool highVoltageOnly = false)
         {
 
             System.IO.Directory.CreateDirectory(outputFolder);
@@ -40,8 +40,9 @@ namespace DAX.CIM.PFAdapter
 
             var filtered = FilterHelper.Filter(initialContext, new FilterRule()
             {
-                MinVoltageLevel = 10000,
+                MinVoltageLevel = highVoltageOnly ? 60000 : 10000,
             });
+                
 
             var mappingContext = new MappingContext();
 

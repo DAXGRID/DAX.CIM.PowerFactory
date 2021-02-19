@@ -152,6 +152,11 @@ namespace DAX.CIM.PFAdapter
                             // Add high voltage measured customer, even if lv modelled
                             if (cimObject is EnergyConsumer && ((EnergyConsumer)cimObject).PSRType == "Aftagepunkt_fællesmaaling" && ((EnergyConsumer)cimObject).BaseVoltage == 400)
                             {
+                                // Don't add low voltage consumers if min voltage = 600000
+                                if (rule.MinVoltageLevel == 60000)
+                                    continue;
+
+
                                 var ec = cimObject as EnergyConsumer;
 
 
@@ -208,9 +213,47 @@ namespace DAX.CIM.PFAdapter
                                 }
                             }
 
+                            // Check if substation should be filtered away
+                            if (cimObject is Substation st)
+                            {
+                                var priVoltage = st.GetPrimaryVoltageLevel(context);
+                                if (priVoltage < rule.MinVoltageLevel)
+                                    continue;
+                            }
+
+                            // Check if power transformer should be filtered away
+                            if (cimObject is PowerTransformer pt)
+                            {
+                                var ends = pt.GetEnds(context);
+
+                                if (!ends.Exists(e => e.BaseVoltage >= rule.MinVoltageLevel))
+                                    continue;
+                            }
+
+                            // Check if power transformer should be filtered away
+                            if (cimObject is PowerTransformerEnd ptEnd)
+                            {
+                                var ptOfPtEnd = context.GetObject<PowerTransformer>(ptEnd.PowerTransformer.@ref);
+
+                                var ends = ptOfPtEnd.GetEnds(context);
+
+                                if (!ends.Exists(e => e.BaseVoltage >= rule.MinVoltageLevel))
+                                    continue;
+
+                            }
+
+
+                            // Check if object part of substation should be filtered away due to voltage level
+                            if (partOfSt != null)
+                            {
+                                var priVoltage = partOfSt.GetPrimaryVoltageLevel(context);
+                                if (priVoltage < rule.MinVoltageLevel)
+                                    continue;
+                            }
+
 
                             // If part of substation, check if we should filter away
-                            if (partOfSt != null && (rule.IncludeSpecificSubstations == null ||
+                                if (partOfSt != null && (rule.IncludeSpecificSubstations == null ||
                                 (rule.IncludeSpecificSubstations.Count > 1
                                 && !rule.IncludeSpecificSubstations.Contains(partOfSt.name))))
                             {

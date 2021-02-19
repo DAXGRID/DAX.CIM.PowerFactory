@@ -256,6 +256,10 @@ namespace DAX.CIM.PFAdapter.CGMES
         {
             string xml = "<cim:Substation rdf:ID = '_" + substation.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(substation.name) + "</cim:IdentifiedObject.name>\r\n";
+
+            if (substation.description != null)
+                xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(substation.description) + "</cim:IdentifiedObject.description>\r\n";
+
             xml += "  <cim:Substation.Region rdf:resource='#_0472a781-c766-11e1-8775-005056c00008'/>\r\n";
             xml += "</cim:Substation>\r\n\r\n";
 

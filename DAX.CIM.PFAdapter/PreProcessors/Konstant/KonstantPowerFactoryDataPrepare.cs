@@ -77,7 +77,7 @@ namespace DAX.CIM.PFAdapter
                 }
             }
 
-            // Set peterson coil name to station + gis name
+            // Set peterson coil name to station + gis name + min og max
             foreach (var inputCimObject in input)
             {
                 if (inputCimObject is PetersenCoil)
@@ -95,7 +95,32 @@ namespace DAX.CIM.PFAdapter
                         if (coilInfo != null && coilInfo.minimumCurrent != null && coilInfo.maximumCurrent != null)
                             coil.name += " " + (int)coilInfo?.minimumCurrent?.Value + "-" + (int)coilInfo?.maximumCurrent?.Value;
                         else
-                            Logger.Log(LogLevel.Warning, "Spole på station: " + st.name + " mangler værdier.");
+                            Logger.Log(LogLevel.Warning, "Slukkepole på station: " + st.name + " mangler værdier.");
+                    }
+                    else
+                        coil.name = st.name + " " + coil.name + " 0-0";
+                }
+            }
+
+            // Set reactor coil (linear shunt compensator) to station + gis name + min og max
+            foreach (var inputCimObject in input)
+            {
+                if (inputCimObject is LinearShuntCompensator)
+                {
+                    var coil = inputCimObject as LinearShuntCompensator;
+
+                    var st = coil.GetSubstation(true, context);
+
+                    if (coil.Asset != null && coil.Asset.AssetInfo != null && coil.Asset.AssetInfo.@ref != null)
+                    {
+                        var coilInfo = context.GetObject<LinearShuntCompensatorInfoExt>(coil.Asset.AssetInfo.@ref);
+
+                        coil.name = st.name + " " + coil.name;
+
+                        if (coilInfo != null && coilInfo.minimumReactivePower != null && coilInfo.maximumReactivePower != null)
+                            coil.name += " " + (int)coilInfo?.minimumReactivePower?.Value + "-" + (int)coilInfo?.maximumReactivePower?.Value;
+                        else
+                            Logger.Log(LogLevel.Warning, "Reaktorspole på station: " + st.name + " mangler værdier.");
                     }
                     else
                         coil.name = st.name + " " + coil.name + " 0-0";
@@ -154,16 +179,23 @@ namespace DAX.CIM.PFAdapter
                     asset.AssetModel = null;
                 }
 
-                // Remove current transformer sitting on voltage level < 60 kV
-                if (inputCimObject is CurrentTransformer)
+                // Remove measurment current transformer and cts sitting on voltage level < 60 kV
+                if (inputCimObject is CurrentTransformer && !((CurrentTransformer)inputCimObject).PSRType.ToLower().Contains("kundemaaling"))
                 {
                     var ct = inputCimObject as CurrentTransformer;
 
-                    var ctTerminal = context.GetObject<Terminal>(ct.Terminal.@ref);
+                    try
+                    {
+                        var ctTerminal = context.GetObject<Terminal>(ct.Terminal.@ref);
 
-                    var ctEq = context.GetObject<ConductingEquipment>(ctTerminal.ConductingEquipment.@ref);
+                        var ctEq = context.GetObject<ConductingEquipment>(ctTerminal.ConductingEquipment.@ref);
 
-                    if (ctEq.BaseVoltage < 60000)
+                        if (ctEq.BaseVoltage < 60000)
+                        {
+                            dropList.Add(ct);
+                        }
+                    }
+                    catch (ArgumentException ex)
                     {
                         dropList.Add(ct);
                     }
@@ -217,14 +249,20 @@ namespace DAX.CIM.PFAdapter
                 {
                     var pt = inputCimObject as PotentialTransformer;
 
-                    var ptTerminal = context.GetObject<Terminal>(pt.Terminal.@ref);
-
-                    var ptEq = context.GetObject<ConductingEquipment>(ptTerminal.ConductingEquipment.@ref);
-
-                    if (ptEq.BaseVoltage < 60000)
+                    // If terminal point to object we don't have including - i.e. some 400 volt component - don't bother with the CT
+                    if (context.GetAllObjects().Exists(o => o.mRID == pt.Terminal.@ref))
                     {
-                        dropList.Add(pt);
+                        var ptTerminal = context.GetObject<Terminal>(pt.Terminal.@ref);
+
+                        var ptEq = context.GetObject<ConductingEquipment>(ptTerminal.ConductingEquipment.@ref);
+
+                        if (ptEq.BaseVoltage < 60000)
+                        {
+                            dropList.Add(pt);
+                        }
                     }
+                    else
+                        dropList.Add(pt);
                 }
 
                 // Check that potential transformer info has voltages
@@ -420,6 +458,11 @@ namespace DAX.CIM.PFAdapter
                 {
                     var cn = inputCimObject as ConnectivityNode;
 
+                    if (cn.mRID == "1663a3a8-a706-726a-8de5-7f57e2f9e68b")
+                    {
+
+                    }
+
                     if (cn.name == null || cn.name.Length == 0)
                     {
                         var cnNeighbors = cn.GetNeighborConductingEquipments(context);
@@ -431,11 +474,16 @@ namespace DAX.CIM.PFAdapter
                         {
                             var stVoltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
 
+                            var ptConnections = context.GetConnections(pt);
+                            var ptTerminal = ptConnections.First(c => c.ConnectivityNode == cn);
+                            var ptEnds = pt.GetEnds(context);
+                            var ptEnd = ptEnds.Find(e => e.Terminal.@ref == ptTerminal.Terminal.mRID);
+                            double ptEndVoltageLevel = ptEnd.BaseVoltage;
+
                             if (pt.name != null)
                             {
                                 // HACK SHOULD BE CLEANED UP
                                 // Terminal actual exist in source, but get trown away in filter, because nothing connected to it
-                                var ptConnections = context.GetConnections(pt);
 
                                 if (!ptConnections.Exists(c => c.Terminal.sequenceNumber == "2"))
                                 {
@@ -477,46 +525,71 @@ namespace DAX.CIM.PFAdapter
                                         ConductingEquipment = new TerminalConductingEquipment { @ref = pt.mRID }
                                     };
 
-                                    var ptEnd = context.GetPowerTransformerEnds(pt).First(p => p.endNumber == "2");
-                                    ptEnd.Terminal = new TransformerEndTerminal() { @ref = ptLvTerminal.mRID };
+                                    var ptEnd2 = context.GetPowerTransformerEnds(pt).First(p => p.endNumber == "2");
+                                    ptEnd2.Terminal = new TransformerEndTerminal() { @ref = ptLvTerminal.mRID };
 
                                     addList.Add(ptLvTerminal);
                                 }
                             }
 
-                            var voltageLevels = context.GetSubstationVoltageLevels(pt.Substation);
+                                                       
 
-                            double voltageLevel = 400;
-
+                            // IF the PT END CN is connected to a conducting equipment
                             if (cnNeighbors.Exists(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0))
                             {
-                                voltageLevel = cnNeighbors.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
+                                ptEndVoltageLevel = cnNeighbors.First(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0).BaseVoltage;
 
-                                var ptConnections = context.GetConnections(pt);
-                                var ptTerminal = ptConnections.First(c => c.ConnectivityNode == cn);
-
-                                if (voltageLevels.Exists(o => o.BaseVoltage == voltageLevel))
+                                if (stVoltageLevels.Exists(o => o.BaseVoltage == ptEndVoltageLevel))
                                 {
-                                    var vl = voltageLevels.First(o => o.BaseVoltage == voltageLevel);
+                                    var vl = stVoltageLevels.First(o => o.BaseVoltage == ptEndVoltageLevel);
 
                                     _mappingContext.ConnectivityNodeToVoltageLevel.Add(cn, vl);
                                 }
                             }
-                            // Set to 400 volt winding, if exists
+                            // IF the PT END CN is *not* connected to anything
                             else
                             {
-                                if (voltageLevels.Exists(o => o.BaseVoltage == 400))
+                                // Set CN to PT END voltage level
+                                var vl = stVoltageLevels.First(o => o.BaseVoltage == ptEndVoltageLevel);
+                                _mappingContext.ConnectivityNodeToVoltageLevel.Add(cn, vl);
+
+                                // If 60 kV transformer secondary side
+                                if (ptEndVoltageLevel < 20000 && ptEndVoltageLevel > 5000)
                                 {
-                                    var vl = voltageLevels.First(o => o.BaseVoltage == 400);
-                                    _mappingContext.ConnectivityNodeToVoltageLevel.Add(cn, vl);
+                                    if (ptEnds.Exists(e => e.BaseVoltage == 60000))
+                                    {
+                                        EnergyConsumer ec = new EnergyConsumer()
+                                        {
+                                            mRID = Guid.NewGuid().ToString(),
+                                            name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(ptEndVoltageLevel) + "_" + pt.name.Replace("TRF", ""),
+                                            EquipmentContainer = new EquipmentEquipmentContainer() { @ref = vl.mRID },
+                                            BaseVoltage = vl.BaseVoltage
+                                        };
+
+                                        Terminal ecTerm = new Terminal()
+                                        {
+                                            mRID = Guid.NewGuid().ToString(),
+                                            name = ec.name + "_T1",
+                                            ConductingEquipment = new TerminalConductingEquipment() { @ref = ec.mRID },
+                                            ConnectivityNode = new TerminalConnectivityNode() { @ref = cn.mRID }
+                                        };
+
+                                        addList.Add(ec);
+                                        addList.Add(ecTerm);
+                                    }
                                 }
+
                             }
 
+                            cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(ptEndVoltageLevel) + "_" + pt.name.Replace("TRF", "");
+
+                            /*
                             // Hvis trafo deler node med skinne, eller node er 400 volt, så brug jakob navngivning
-                            if (bus != null || voltageLevel == 400)
-                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(voltageLevel) + "_" + pt.name.Replace("TRF", "");
+                            if (bus != null || ptEndVoltageLevel == 400)
+                                cn.name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(ptEndVoltageLevel) + "_" + pt.name.Replace("TRF", "");
                             else
                                 cn.name = "CN";
+                            */
                         }
                         else if (bus != null && bus.name != null)
                             cn.name = bus.name;
