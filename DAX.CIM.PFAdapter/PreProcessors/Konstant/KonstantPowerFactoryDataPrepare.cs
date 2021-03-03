@@ -149,13 +149,6 @@ namespace DAX.CIM.PFAdapter
             // Fix and check objects
             foreach (var inputCimObject in input)
             {
-                // Prefix energy consumers with "l_"
-                if (inputCimObject is EnergyConsumer)
-                {
-                    if (inputCimObject.name != null)
-                        inputCimObject.name = "l_" + inputCimObject.name;
-                }
-
                 // Remove switch gear busbar asset model information (because PF complain about missing type, and Konstant/Thue says he don't want types into PF for now
                 if (inputCimObject is BusbarSectionInfo)
                 {
