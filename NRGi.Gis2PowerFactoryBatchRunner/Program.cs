@@ -23,9 +23,9 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
     {
         static void Main(string[] args)
         {
-            if (args.Length != 6)
+            if (args.Length < 6)
             {
-                System.Console.Out.WriteLine("Usage: Gis2PowerFactoryBatchRunner.exe inputAdapterConfigFileName outputCimArchiveFolder outputCimArchiveName outputLogFile extent");
+                System.Console.Out.WriteLine("Usage: Gis2PowerFactoryBatchRunner.exe inputAdapterConfigFileName outputCimArchiveFolder outputCimArchiveName outputLogFile extent highVoltageOnly(true/false)");
                 return;
             }
 
@@ -37,6 +37,10 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
                 Guid cimModeRdfId = Guid.Parse(args[3]);
                 string logFileName = args[4];
                 string extent = args[5];
+                bool highVoltageOnly = false;
+
+                if (args.Length == 7 && args[6].ToLower() == "true")
+                    highVoltageOnly = true;
 
                 var cimFileName = cimArchiveName + ".jsonl";
 
@@ -70,7 +74,7 @@ namespace NRGi.Gis2PowerFactoryBatchRunner
 
                 var cimObjects = ((DAXCIMSerializer)serializer).GetIdentifiedObjects(CIMMetaDataManager.Repository, graph.CIMObjects, true, true, true).ToList();
 
-                var pfWriter = new KonstantCimArchiveWriter(cimObjects, cimArchiveFolder, cimArchiveName, cimModeRdfId);
+                var pfWriter = new KonstantCimArchiveWriter(cimObjects, cimArchiveFolder, cimArchiveName, cimModeRdfId, highVoltageOnly);
 
                 Logger.Log(LogLevel.Info, "Export to Power Factory CIM Archive: " + cimArchiveFolder + "\\" + cimArchiveName + ".zip finished.");
 

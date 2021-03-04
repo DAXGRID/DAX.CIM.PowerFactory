@@ -40,7 +40,7 @@ namespace DAX.CIM.PFAdapter
 
             var filtered = FilterHelper.Filter(initialContext, new FilterRule()
             {
-                MinVoltageLevel = highVoltageOnly ? 60000 : 10000,
+                MinVoltageLevel = highVoltageOnly ? 20000 : 10000,
             });
                 
 

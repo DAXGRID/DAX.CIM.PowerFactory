@@ -65,7 +65,19 @@ namespace DAX.CIM.PFAdapter.Tests
 
             string folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_syd_60kv_test";
 
-            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_south_60kV", Guid.Parse("b8a2ec4d-8337-4a1c-9aec-32b8335435c0"), true);
+            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "Konstant Syd", Guid.Parse("3527c345-3f5b-4de8-acf4-906b4d0688af"), true);
+        }
+
+        [TestMethod]
+        public void TestKonstantNorthArea60kVOnly()
+        {
+            var reader = new CimJsonFileReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"c:\temp\cim\pf_test_nord.jsonl"));
+
+            var cimObjects = reader.Read();
+
+            string folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_nord_60kv_test";
+
+            var writer = new KonstantCimArchiveWriter(cimObjects, folder, "Konstant Nord", Guid.Parse("c3cb1ba1-8670-471a-9ba2-9d6d46d1295c"), true);
         }
 
 

@@ -152,8 +152,8 @@ namespace DAX.CIM.PFAdapter
                             // Add high voltage measured customer, even if lv modelled
                             if (cimObject is EnergyConsumer && ((EnergyConsumer)cimObject).PSRType == "Aftagepunkt_fællesmaaling" && ((EnergyConsumer)cimObject).BaseVoltage == 400)
                             {
-                                // Don't add low voltage consumers if min voltage = 600000
-                                if (rule.MinVoltageLevel == 60000)
+                                // Don't add low voltage consumers if min voltage > 15000
+                                if (rule.MinVoltageLevel > 15000)
                                     continue;
 
 
