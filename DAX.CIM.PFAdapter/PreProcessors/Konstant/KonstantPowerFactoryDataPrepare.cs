@@ -12,6 +12,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.Operation.Linemerge;
 using DAX.CIM.PFAdapter.PreProcessors;
 using DAX.Util;
+using DAX.CIM.PhysicalNetworkModel.FeederInfo;
 
 namespace DAX.CIM.PFAdapter
 {
@@ -32,6 +33,9 @@ namespace DAX.CIM.PFAdapter
 
         public IEnumerable<IdentifiedObject> Transform(CimContext context, IEnumerable<IdentifiedObject> inputParam)
         {
+            FeederInfoContext feederContext = new FeederInfoContext(context);
+            feederContext.CreateFeederObjects();
+
             List<IdentifiedObject> input = inputParam.ToList();
 
             HashSet<PhysicalNetworkModel.IdentifiedObject> dropList = new HashSet<IdentifiedObject>();
@@ -74,6 +78,15 @@ namespace DAX.CIM.PFAdapter
                     var st = bus.GetSubstation(true, context);
 
                     bus.name = st.name + "_" + GetVoltageLevelStr(bus.BaseVoltage) + "_" + bus.name;
+
+                    var feederInfo = feederContext.GeConductingEquipmentFeederInfo(bus);
+                    if (feederInfo != null && feederInfo.Feeders != null && feederInfo.Feeders.Count > 0)
+                    {
+                        var feeder = feederInfo.Feeders[0];
+
+                        if (feeder.ConnectionPoint.Substation != null)
+                            bus.description = feeder.ConnectionPoint.Substation.name;
+                    }
                 }
             }
 

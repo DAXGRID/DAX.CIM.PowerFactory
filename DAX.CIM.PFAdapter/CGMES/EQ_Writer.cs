@@ -464,6 +464,10 @@ namespace DAX.CIM.PFAdapter.CGMES
         {
             string xml = "<cim:BusbarSection rdf:ID = '_" + busbar.mRID + "'>\r\n";
             xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(busbar.name) + "</cim:IdentifiedObject.name>\r\n";
+
+            if (busbar.description != null)
+                xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(busbar.description) + "</cim:IdentifiedObject.description>\r\n";
+
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + busbar.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(busbar.BaseVoltage) + "'/>\r\n";
             xml += "</cim:BusbarSection>\r\n\r\n";
