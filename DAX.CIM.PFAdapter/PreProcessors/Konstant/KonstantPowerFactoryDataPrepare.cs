@@ -538,7 +538,7 @@ namespace DAX.CIM.PFAdapter
                                 }
                             }
 
-                                                       
+
 
                             // IF the PT END CN is connected to a conducting equipment
                             if (cnNeighbors.Exists(o => !(o is PowerTransformer) && o.BaseVoltage > 0.0))
@@ -598,7 +598,10 @@ namespace DAX.CIM.PFAdapter
                             */
                         }
                         else if (bus != null && bus.name != null)
+                        {
                             cn.name = bus.name;
+                            cn.description = bus.description;
+                        }
                         else
                         {
                             var bay = cn.GetBay(false, context);

@@ -536,6 +536,10 @@ namespace DAX.CIM.PFAdapter.CGMES
                     if (cn.name != null)
                         xml += "  <cim:IdentifiedObject.name>" + cn.name + "</cim:IdentifiedObject.name>\r\n";
 
+                    if (cn.description != null)
+                        xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(cn.description) + "</cim:IdentifiedObject.description>\r\n";
+
+
                     if (!cn.IsInsideSubstation())
                     {
                         //cn.IsInsideSubstation();
