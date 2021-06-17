@@ -566,7 +566,7 @@ namespace DAX.CIM.PFAdapter
                                     {
                                         EnergyConsumer ec = new EnergyConsumer()
                                         {
-                                            mRID = GUIDHelper.CreateDerivedGuid(Guid.Parse(pt.mRID), 100).ToString(),
+                                            mRID = GUIDHelper.CreateDerivedGuid(Guid.Parse(pt.mRID), 1001, true).ToString(),
                                             name = pt.GetSubstation(true, context).name + "_" + GetVoltageLevelStr(ptEndVoltageLevel) + "_" + pt.name.Replace("TRF", ""),
                                             EquipmentContainer = new EquipmentEquipmentContainer() { @ref = vl.mRID },
                                             BaseVoltage = vl.BaseVoltage
@@ -574,7 +574,7 @@ namespace DAX.CIM.PFAdapter
 
                                         Terminal ecTerm = new Terminal()
                                         {
-                                            mRID = GUIDHelper.CreateDerivedGuid(Guid.Parse(pt.mRID), 101).ToString(),
+                                            mRID = GUIDHelper.CreateDerivedGuid(Guid.Parse(pt.mRID), 1002, true).ToString(),
                                             name = ec.name + "_T1",
                                             ConductingEquipment = new TerminalConductingEquipment() { @ref = ec.mRID },
                                             ConnectivityNode = new TerminalConnectivityNode() { @ref = cn.mRID }
