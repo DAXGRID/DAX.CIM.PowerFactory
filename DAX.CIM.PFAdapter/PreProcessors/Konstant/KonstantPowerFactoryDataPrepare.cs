@@ -90,6 +90,40 @@ namespace DAX.CIM.PFAdapter
                 }
             }
 
+            // Set feeder name on junction connectivity nodes between cables
+            foreach (var inputCimObject in input)
+            {
+                if (inputCimObject is ConnectivityNode)
+                {
+                    var cn = inputCimObject as ConnectivityNode;
+
+                    if (cn.mRID == "c540b203-e442-7027-824c-bc561b3de47d")
+                    {
+
+                    }
+
+                    var cnEqs = context.GetConnections(cn);
+
+                    if (cnEqs.Count > 0)
+                    {
+                        if (cnEqs.All(e => e.ConductingEquipment is ACLineSegment))
+                        {
+                            var eq = cnEqs.First().ConductingEquipment;
+
+                            var feederInfo = feederContext.GeConductingEquipmentFeederInfo(eq);
+
+                            if (feederInfo != null && feederInfo.Feeders != null && feederInfo.Feeders.Count > 0)
+                            {
+                                var feeder = feederInfo.Feeders[0];
+
+                                if (feeder.ConnectionPoint.Substation != null)
+                                    cn.description = feeder.ConnectionPoint.Substation.name;
+                            }
+                        }
+                    }
+                }
+            }
+
             // Set peterson coil name to station + gis name + min og max
             foreach (var inputCimObject in input)
             {
@@ -190,6 +224,8 @@ namespace DAX.CIM.PFAdapter
                 {
                     var ct = inputCimObject as CurrentTransformer;
 
+                    bool ctIsDropped = false;
+
                     try
                     {
                         var ctTerminal = context.GetObject<Terminal>(ct.Terminal.@ref);
@@ -199,11 +235,48 @@ namespace DAX.CIM.PFAdapter
                         if (ctEq.BaseVoltage < 60000)
                         {
                             dropList.Add(ct);
+                            ctIsDropped = true;
                         }
                     }
                     catch (ArgumentException ex)
                     {
                         dropList.Add(ct);
+                        ctIsDropped = true;
+                    }
+
+                    // Move CT to line end, transformer end
+
+                    var st = ct.GetSubstation(true, context);
+
+                    foreach (var eq in st.GetEquipments(context))
+                    {
+                        // If component inside same bay as ct
+                        if (eq is ConductingEquipment && eq.EquipmentContainer.@ref == ct.EquipmentContainer.@ref)
+                        {
+                            var ci = eq as ConductingEquipment;
+
+                            var ciConnections = context.GetConnections(ci);
+                            
+
+                            foreach (var ciConnection in ciConnections)
+                            {
+                                var ciNeighbors = context.GetConnections(ciConnection.ConnectivityNode).Where(c => c.ConductingEquipment != ci).ToList();
+
+                                if (ciNeighbors.Any(c => c.ConductingEquipment is ACLineSegment))
+                                {
+                                    ct.Terminal.@ref = ciConnection.Terminal.mRID;
+                                }
+                                else if (ciNeighbors.Any(c => c.ConductingEquipment is PowerTransformer))
+                                {
+                                    ct.Terminal.@ref = ciConnection.Terminal.mRID;
+                                }
+                                else if (ciNeighbors.Count == 0)
+                                {
+                                    ct.Terminal.@ref = ciConnection.Terminal.mRID;
+                                }
+
+                            }
+                        }
                     }
                 }
 
