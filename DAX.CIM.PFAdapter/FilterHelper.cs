@@ -73,8 +73,17 @@ namespace DAX.CIM.PFAdapter
                         if (cimObject is Substation)
                             partOfSt = (Substation)cimObject;
 
+                        if (cimObject is BayExt && ((BayExt)cimObject).VoltageLevel == null)
+                            continue;
+
                         if (cimObject.IsInsideSubstation(context))
                             partOfSt = cimObject.GetSubstation(true, context);
+
+
+                        if (cimObject.mRID == "125af165-2f83-4930-8cb1-db44a2784530")
+                        {
+
+                        }
 
                         if (cimObject is ExternalNetworkInjection)
                         {

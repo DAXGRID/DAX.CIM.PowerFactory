@@ -21,30 +21,60 @@ namespace DAX.CIM.PFAdapter
     {
 
         MappingContext _mappingContext;
+        List<IdentifiedObject> _allCimObjects;
 
-        public KonstantBigEnergyConsumerHandler(MappingContext mappingContext)
+
+        public KonstantBigEnergyConsumerHandler(MappingContext mappingContext, List<IdentifiedObject> allCimObjects)
         {
             _mappingContext = mappingContext;
+            _allCimObjects = allCimObjects;
         }
 
-        public IEnumerable<IdentifiedObject> Transform(CimContext context, IEnumerable<IdentifiedObject> input)
+        public IEnumerable<IdentifiedObject> Transform(CimContext context, IEnumerable<IdentifiedObject> cimObjects)
         {
             HashSet<PhysicalNetworkModel.IdentifiedObject> dropList = new HashSet<IdentifiedObject>();
 
             List<PhysicalNetworkModel.IdentifiedObject> addList = new List<IdentifiedObject>();
 
-            foreach (var inputCimObject in input)
+            foreach (var inputCimObject in cimObjects)
             {
                 if (inputCimObject is EnergyConsumer)
                 {
-                   if (inputCimObject.name == "571313124501138119")
+
+                    if (inputCimObject.name == "571313124500317171")
+                    {
+                    }
+
+                    if (inputCimObject.mRID == "d40310fd-6591-46e0-a676-fc8341a4bb9d")
                     {
 
                     }
-
+                        
                     var ec = inputCimObject as EnergyConsumer;
 
-                    if (ec.BaseVoltage > 400)
+                    var pts = cimObjects.Where(c => c is CurrentTransformer);
+
+
+                    if (ec.name != null && ec.name.Length == 18 && _allCimObjects.Any(c => c is CurrentTransformer && c.name == ec.name && ((CurrentTransformer)c).PSRType != null && ( ((CurrentTransformer)c).PSRType.Contains("60") || ((CurrentTransformer)c).PSRType.Contains("0,4 kV siden")) ))
+                    {
+                        dropList.Add(ec);
+
+                        var ecTerminalConnections = context.GetConnections(ec);
+
+                        if (ecTerminalConnections.Count > 0)
+                        {
+                            var ecTerminal = ecTerminalConnections[0].Terminal;
+
+                            var ecCn = ecTerminalConnections[0].ConnectivityNode;
+
+                            dropList.Add(ecTerminal);
+
+                            var loc = cimObjects.First(c => c.mRID == ec.Location.@ref);
+
+                            dropList.Add(loc);
+                        }
+                    }
+                    else
                     {
                         // ec terminal connections
                         var ecTerminalConnections = context.GetConnections(inputCimObject);
@@ -57,7 +87,9 @@ namespace DAX.CIM.PFAdapter
 
                             var ecCnConnections = context.GetConnections(ecCn);
 
-                            if (ecCnConnections.Exists(o => o.ConductingEquipment is ACLineSegment))
+                            var aclsCount = ecCnConnections.Count(o => o.ConductingEquipment is ACLineSegment);
+
+                            if (aclsCount == 1)
                             {
                                 var acls = ecCnConnections.First(o => o.ConductingEquipment is ACLineSegment).ConductingEquipment;
 
@@ -89,6 +121,15 @@ namespace DAX.CIM.PFAdapter
                                             dropList.Add(aclsConnections[0].Terminal);
                                             dropList.Add(aclsConnections[1].Terminal);
                                         }
+                                    }
+                                }
+                            }
+                            else if (aclsCount > 1)
+                            {
+                                foreach (var acls in ecCnConnections.Where(o => o.ConductingEquipment is ACLineSegment))
+                                {
+                                    if (acls.ConductingEquipment.mRID == "5d8d97aa-ae4c-4d6a-b866-8fd4d61d2e19")
+                                    {
 
                                     }
                                 }
@@ -100,7 +141,7 @@ namespace DAX.CIM.PFAdapter
 
 
             // return objects, except the one dropped
-            foreach (var inputObj in input)
+            foreach (var inputObj in cimObjects)
             {
                 if (inputObj.name == "571313124501006982")
                 {

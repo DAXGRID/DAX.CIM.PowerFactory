@@ -46,6 +46,9 @@ namespace DAX.CIM.PFAdapter
 
             var mappingContext = new MappingContext();
 
+
+            var allCimObjects = CimContext.GetCurrent().GetAllObjects();
+
             // Reinitialize cim context to filtered objects
             CimContext _context = CimContext.Create(filtered);
 
@@ -54,7 +57,7 @@ namespace DAX.CIM.PFAdapter
                new List<IPreProcessor> {
                     new ACLSMerger(mappingContext),
                     new TransformerCableMerger(mappingContext),
-                    new KonstantBigEnergyConsumerHandler(mappingContext),
+                    new KonstantBigEnergyConsumerHandler(mappingContext, allCimObjects),
                     new KonstantPowerFactoryDataPrepareAndFix(mappingContext)
                });
 

@@ -42,15 +42,16 @@ namespace DAX.CIM.PFAdapter.CGMES
     <md:Model.version>4</md:Model.version>
 	<md:Model.profile>http://entsoe.eu/CIM/EquipmentCore/3/1</md:Model.profile>
     <md:Model.profile>http://entsoe.eu/CIM/EquipmentOperation/3/1</md:Model.profile>
+    <md:Model.profile>http://entsoe.eu/CIM/EquipmentShortCircuit/3/1</md:Model.profile>
     <md:Model.modelingAuthoritySet>http://NRGi.dk/Planning/1</md:Model.modelingAuthoritySet>
   </md:FullModel>
 
   <cim:GeographicalRegion rdf:ID='_0472f5a6-c766-11e1-8775-005056c00008'>
-    <cim:IdentifiedObject.name>" + _netName + @"</cim:IdentifiedObject.name>
+    <cim:IdentifiedObject.name>" + FormatName(_netName) + @"</cim:IdentifiedObject.name>
   </cim:GeographicalRegion>
 
   <cim:SubGeographicalRegion rdf:ID='_0472a781-c766-11e1-8775-005056c00008'>
-    <cim:IdentifiedObject.name>" + _netName + @"</cim:IdentifiedObject.name>
+    <cim:IdentifiedObject.name>" + FormatName(_netName) + @"</cim:IdentifiedObject.name>
     <cim:SubGeographicalRegion.Region rdf:resource='#_0472f5a6-c766-11e1-8775-005056c00008' />
   </cim:SubGeographicalRegion>
  
@@ -193,7 +194,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddLine(string mrid, string name)
         {
             string xml = "<cim:Line rdf:ID = '_" + mrid + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Line.Region rdf:resource='#_0472a781-c766-11e1-8775-005056c00008'/>\r\n";
             xml += "</cim:Line>\r\n\r\n";
 
@@ -203,7 +204,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.ExternalNetworkInjection eni)
         {
             string xml = "<cim:ExternalNetworkInjection rdf:ID='_" + eni.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(eni.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(eni.name) + "</cim:IdentifiedObject.name>\r\n";
 
             if (eni.EquipmentContainer != null)
                 xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + eni.EquipmentContainer.@ref + "'/>\r\n";
@@ -255,7 +256,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.Substation substation)
         {
             string xml = "<cim:Substation rdf:ID = '_" + substation.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(substation.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(substation.name) + "</cim:IdentifiedObject.name>\r\n";
 
             if (substation.description != null)
                 xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(substation.description) + "</cim:IdentifiedObject.description>\r\n";
@@ -269,7 +270,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.VoltageLevel vl)
         {
             string xml = "<cim:VoltageLevel rdf:ID = '_" + vl.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + vl.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(vl.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:VoltageLevel.Substation rdf:resource = '#_" + vl.EquipmentContainer1.@ref + "'/>\r\n";
             xml += "  <cim:VoltageLevel.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(vl.BaseVoltage) + "'/>\r\n";
             xml += "</cim:VoltageLevel>\r\n\r\n";
@@ -280,7 +281,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.Bay bay)
         {
             string xml = "<cim:Bay rdf:ID = '_" + bay.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(bay.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(bay.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Bay.VoltageLevel rdf:resource = '#_" + bay.VoltageLevel.@ref + "'/>\r\n";
             xml += "</cim:Bay>\r\n\r\n";
 
@@ -290,9 +291,11 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.ACLineSegment acls, string lineMrid = null)
         {
             string xml = "<cim:ACLineSegment rdf:ID='_" + acls.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(acls.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(acls.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
+            xml += "  <cim:ACLineSegment.shortCircuitEndTemperature>80</cim:ACLineSegment.shortCircuitEndTemperature>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(acls.BaseVoltage) + "'/>\r\n";
+        
 
             if (lineMrid != null)
             {
@@ -328,7 +331,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.LoadBreakSwitch ls)
         {
             string xml = "<cim:LoadBreakSwitch rdf:ID='_" + ls.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(ls.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(ls.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + ls.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(ls.BaseVoltage) + "'/>\r\n";
 
@@ -345,7 +348,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.Breaker ls)
         {
             string xml = "<cim:Breaker rdf:ID='_" + ls.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(ls.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(ls.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + ls.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(ls.BaseVoltage) + "'/>\r\n";
 
@@ -362,7 +365,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.Disconnector dis)
         {
             string xml = "<cim:Disconnector rdf:ID='_" + dis.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(dis.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(dis.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + dis.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(dis.BaseVoltage) + "'/>\r\n";
 
@@ -380,7 +383,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         {
             // create disconnector, because PF thinks that fuse is not a conducting equipment
             string xml = "<cim:Disconnector rdf:ID='_" + fuse.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(fuse.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(fuse.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + fuse.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(fuse.BaseVoltage) + "'/>\r\n";
 
@@ -397,7 +400,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.PetersenCoil coil)
         {
             string xml = "<cim:PetersenCoil rdf:ID='_" + coil.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(coil.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(coil.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + coil.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(coil.BaseVoltage) + "'/>\r\n";
 
@@ -422,6 +425,9 @@ namespace DAX.CIM.PFAdapter.CGMES
             if (coil.xGroundNominal != null)
                 xml += "  <cim:PetersenCoil.xGroundNominal>" + DoubleToString(coil.xGroundNominal.Value) + "</cim:PetersenCoil.xGroundNominal>\r\n";
 
+            if (coil.mode != null)
+                xml += "  <cim:PetersenCoil.mode>PetersenCoilModeKind." + coil.mode.ToString() + "</cim:PetersenCoil.mode>\r\n";
+
             xml += "</cim:PetersenCoil>\r\n\r\n";
             _writer.Write(xml);
         }
@@ -429,7 +435,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.LinearShuntCompensator compensator)
         {
             string xml = "<cim:LinearShuntCompensator rdf:ID='_" + compensator.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(compensator.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(compensator.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + compensator.EquipmentContainer.@ref + "'/>\r\n";
             xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(compensator.BaseVoltage) + "'/>\r\n";
 
@@ -463,7 +469,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.BusbarSection busbar)
         {
             string xml = "<cim:BusbarSection rdf:ID = '_" + busbar.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(busbar.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(busbar.name) + "</cim:IdentifiedObject.name>\r\n";
 
             if (busbar.description != null)
                 xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(busbar.description) + "</cim:IdentifiedObject.description>\r\n";
@@ -477,18 +483,11 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.Terminal terminal)
         {
-
-            if (terminal.ConductingEquipment.@ref == "76c96252-b533-44b1-aac2-9efb184dc9e7")
-            {
-
-            }
-
-                 
             string xml = "<cim:Terminal rdf:ID = '_" + terminal.mRID + "'>\r\n";
             if (terminal.name == null)
                 xml += "  <cim:IdentifiedObject.name>" + "T" + terminal.sequenceNumber + "</cim:IdentifiedObject.name>\r\n";
             else
-                xml += "  <cim:IdentifiedObject.name>" + terminal.name + "</cim:IdentifiedObject.name>\r\n";
+                xml += "  <cim:IdentifiedObject.name>" + FormatName(terminal.name) + "</cim:IdentifiedObject.name>\r\n";
 
             xml += "  <cim:ACDCTerminal.sequenceNumber>" + terminal.sequenceNumber + "</cim:ACDCTerminal.sequenceNumber>\r\n";
 
@@ -518,11 +517,6 @@ namespace DAX.CIM.PFAdapter.CGMES
 
         public void AddPNMObject(PhysicalNetworkModel.ConnectivityNode cn)
         {
-            if (cn.mRID == "9ecf20a1-980c-74d3-b1ab-67d2fc9180bb")
-            {
-
-            }
-
             if (!_cnAlreadyAdded.Contains(cn.mRID))
             {
                 var neighbors = cn.GetNeighborConductingEquipments();
@@ -534,10 +528,10 @@ namespace DAX.CIM.PFAdapter.CGMES
                     string xml = "<cim:ConnectivityNode rdf:ID='_" + cn.mRID + "'>\r\n";
 
                     if (cn.name != null)
-                        xml += "  <cim:IdentifiedObject.name>" + cn.name + "</cim:IdentifiedObject.name>\r\n";
+                        xml += "  <cim:IdentifiedObject.name>" + FormatName(cn.name) + "</cim:IdentifiedObject.name>\r\n";
 
                     if (cn.description != null)
-                        xml += "  <cim:IdentifiedObject.description>" + HttpUtility.HtmlEncode(cn.description) + "</cim:IdentifiedObject.description>\r\n";
+                        xml += "  <cim:IdentifiedObject.description>" + FormatName(cn.description) + "</cim:IdentifiedObject.description>\r\n";
 
 
                     if (!cn.IsInsideSubstation())
@@ -578,8 +572,9 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.PowerTransformer pt)
         {
             string xml = "<cim:PowerTransformer rdf:ID='_" + pt.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + HttpUtility.HtmlEncode(pt.name) + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(pt.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
+            xml += "  <cim:PowerTransformer.isPartOfGeneratorUnit>false</cim:PowerTransformer.isPartOfGeneratorUnit>\r\n";
             xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + pt.EquipmentContainer.@ref + "'/>\r\n";
             xml += "</cim:PowerTransformer>\r\n\r\n";
             _writer.Write(xml);
@@ -588,7 +583,7 @@ namespace DAX.CIM.PFAdapter.CGMES
         public void AddPNMObject(PhysicalNetworkModel.PowerTransformerEndExt end)
         {
             string xml = "<cim:PowerTransformerEnd rdf:ID='_" + end.mRID + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + end.name + "</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(end.name) + "</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:TransformerEnd.endNumber>" + end.endNumber + "</cim:TransformerEnd.endNumber>\r\n";
             xml += "  <cim:TransformerEnd.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(end.BaseVoltage) + "'/>\r\n";
             xml += "  <cim:TransformerEnd.Terminal rdf:resource='#_" + end.Terminal.@ref + "'/>\r\n";
@@ -637,6 +632,9 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             if (end.phaseAngleClock != null)
                 xml += "  <cim:PowerTransformerEnd.phaseAngleClock>" + end.phaseAngleClock + "</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
+            else
+                xml += "  <cim:PowerTransformerEnd.phaseAngleClock>0</cim:PowerTransformerEnd.phaseAngleClock>\r\n";
+
 
             if (end.connectionKind != null)
                 xml += "  <cim:PowerTransformerEnd.connectionKind rdf:resource='http://iec.ch/TC57/2013/CIM-schema-cim16#WindingConnection." + end.connectionKind + "'/>\r\n";
@@ -651,12 +649,16 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             if (end.b0 != null)
                 xml += "  <cim:PowerTransformerEnd.b0>" + DoubleToString(end.b0.Value) + "</cim:PowerTransformerEnd.b0>\r\n";
+            else
+                xml += "  <cim:PowerTransformerEnd.b0>0</cim:PowerTransformerEnd.b0>\r\n";
 
             if (end.g != null)
                 xml += "  <cim:PowerTransformerEnd.g>" + DoubleToString(end.g.Value) + "</cim:PowerTransformerEnd.g>\r\n";
 
             if (end.g0 != null)
                 xml += "  <cim:PowerTransformerEnd.g0>" + DoubleToString(end.g0.Value) + "</cim:PowerTransformerEnd.g0>\r\n";
+            else
+                xml += "  <cim:PowerTransformerEnd.g0>0</cim:PowerTransformerEnd.g0>\r\n";
 
             if (end.r != null)
                 xml += "  <cim:PowerTransformerEnd.r>" + DoubleToString(end.r.Value) + "</cim:PowerTransformerEnd.r>\r\n";
@@ -669,9 +671,7 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             if (end.x0 != null)
                 xml += "  <cim:PowerTransformerEnd.x0>" + DoubleToString(end.x0.Value) + "</cim:PowerTransformerEnd.x0>\r\n";
-
-            //xml += "  <cim:PowerTransformerEnd.g0>0</cim:PowerTransformerEnd.g0>\r\n";
-            //xml += "  <cim:PowerTransformerEnd.b0>0</cim:PowerTransformerEnd.b0>\r\n";
+      
 
             if (end.ratedU != null)
                 xml += "  <cim:PowerTransformerEnd.ratedU>" + DoubleToString(end.ratedU.Value / 1000) + "</cim:PowerTransformerEnd.ratedU>\r\n";
@@ -699,14 +699,14 @@ namespace DAX.CIM.PFAdapter.CGMES
         {
             // Limit set
             string xml = "<cim:OperationalLimitSet rdf:ID='_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 750, true).ToString() + "'>\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + name + "_limitset</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(name) + "_limitset</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:OperationalLimitSet.Terminal rdf:resource = '#_" + terminalMrid.ToString() + "'/>\r\n";
             xml += "</cim:OperationalLimitSet>\r\n\r\n";
 
             // Current
             xml += "<cim:CurrentLimit rdf:ID='_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 760, true).ToString() + "'>\r\n";
             xml += "  <cim:OperationalLimit.OperationalLimitType rdf:resource='#_b05800c4-9744-45d8-8d9e-c1f39562e4fb' />\r\n";
-            xml += "  <cim:IdentifiedObject.name>" + name + "_limit</cim:IdentifiedObject.name>\r\n";
+            xml += "  <cim:IdentifiedObject.name>" + FormatName(name) + "_limit</cim:IdentifiedObject.name>\r\n";
             xml += "  <cim:OperationalLimit.OperationalLimitSet rdf:resource = '#_" + GUIDHelper.CreateDerivedGuid(terminalMrid, 750, true).ToString() + "'/>\r\n";
             xml += "  <cim:CurrentLimit.value>" + DoubleToString(currentLimitValue) + "</cim:CurrentLimit.value>\r\n";
             xml += "</cim:CurrentLimit>\r\n\r\n";
@@ -720,7 +720,7 @@ namespace DAX.CIM.PFAdapter.CGMES
             if (ec.EquipmentContainer != null)
             {
                 string xml = "<cim:EnergyConsumer rdf:ID = '_" + ec.mRID + "'>\r\n";
-                xml += "  <cim:IdentifiedObject.name>" + ec.name + "</cim:IdentifiedObject.name>\r\n";
+                xml += "  <cim:IdentifiedObject.name>" + FormatName(ec.name) + "</cim:IdentifiedObject.name>\r\n";
                 xml += "  <cim:Equipment.EquipmentContainer rdf:resource = '#_" + ec.EquipmentContainer.@ref + "'/>\r\n";
                 xml += "  <cim:ConductingEquipment.BaseVoltage rdf:resource='#_" + GetBaseVoltageId(ec.BaseVoltage) + "'/>\r\n";
                 xml += "  <cim:Equipment.aggregate>false</cim:Equipment.aggregate>\r\n";
@@ -797,6 +797,19 @@ namespace DAX.CIM.PFAdapter.CGMES
         private double ConvertToEntsoeVoltage(double value)
         {
             return value / 1000;
+        }
+
+        private string FormatName(string name)
+        {
+            if (name == null)
+                return null;
+
+            var truncatedName = name;
+
+            if (name.Length > 32)
+                truncatedName = name.Substring(0, 32);
+
+            return HttpUtility.HtmlEncode(truncatedName);
         }
     }
 }
