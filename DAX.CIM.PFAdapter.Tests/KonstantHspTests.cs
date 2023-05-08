@@ -50,7 +50,7 @@ namespace DAX.CIM.PFAdapter.Tests
 
             var cimObjects = reader.Read();
 
-            string folder = @"\\SHOBJPOW01V\c$\gis_cim_export\konstant_nord_test";
+            string folder = @"\\shokstpow02v\e$\GIS_CIM_EXPORT\\konstant_nord_test";
 
             var writer = new KonstantCimArchiveWriter(cimObjects, folder, "konstant_north", Guid.Parse("3b697c10-ed30-47bb-98b6-f6960df87a41"));
 

@@ -40,20 +40,22 @@ namespace DAX.CIM.PFAdapter
             {
                 if (inputCimObject is EnergyConsumer)
                 {
+                   
 
-                    if (inputCimObject.name == "571313124500317171")
+                    // 60 kv aftagepunkt horsens
+                    if (inputCimObject.name == "571313124500300517")
                     {
                     }
 
-                    if (inputCimObject.mRID == "d40310fd-6591-46e0-a676-fc8341a4bb9d")
+                    // skejby 15 kv aftagepunkt århus
+                    if (inputCimObject.name == "571313115190422986")
                     {
-
                     }
+
                         
                     var ec = inputCimObject as EnergyConsumer;
 
                     var pts = cimObjects.Where(c => c is CurrentTransformer);
-
 
                     if (ec.name != null && ec.name.Length == 18 && _allCimObjects.Any(c => c is CurrentTransformer && c.name == ec.name && ((CurrentTransformer)c).PSRType != null && ( ((CurrentTransformer)c).PSRType.Contains("60") || ((CurrentTransformer)c).PSRType.Contains("0,4 kV siden")) ))
                     {
@@ -67,11 +69,28 @@ namespace DAX.CIM.PFAdapter
 
                             var ecCn = ecTerminalConnections[0].ConnectivityNode;
 
+                            var ecCnConnections = context.GetConnections(ecCn);
+
                             dropList.Add(ecTerminal);
 
                             var loc = cimObjects.First(c => c.mRID == ec.Location.@ref);
 
                             dropList.Add(loc);
+
+
+                            // fjern stik kabel
+                            var aclsCount = ecCnConnections.Count(o => o.ConductingEquipment is ACLineSegment);
+
+                            if (aclsCount == 1)
+                            {
+                                var acls = ecCnConnections.First(o => o.ConductingEquipment is ACLineSegment).ConductingEquipment;
+                                var aclsConnections = context.GetConnections(acls);
+
+                                dropList.Add(acls);
+
+                                dropList.Add(aclsConnections[0].Terminal);
+                                dropList.Add(aclsConnections[1].Terminal);
+                            }
                         }
                     }
                     else

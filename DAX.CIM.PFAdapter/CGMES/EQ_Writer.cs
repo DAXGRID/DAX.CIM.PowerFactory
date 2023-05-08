@@ -456,10 +456,13 @@ namespace DAX.CIM.PFAdapter.CGMES
 
             if (compensator.b0PerSection != null)
                 xml += "  <cim:LinearShuntCompensator.b0PerSection>" + DoubleToString(compensator.b0PerSection.Value) + "</cim:LinearShuntCompensator.b0PerSection>\r\n";
+            else
+                xml += "  <cim:LinearShuntCompensator.b0PerSection>0</cim:LinearShuntCompensator.b0PerSection>\r\n";
 
             if (compensator.g0PerSection != null)
                 xml += "  <cim:LinearShuntCompensator.g0PerSection>" + DoubleToString(compensator.gPerSection.Value) + "</cim:LinearShuntCompensator.gPerSection>\r\n";
-
+            else
+                xml += "  <cim:LinearShuntCompensator.g0PerSection>0</cim:LinearShuntCompensator.g0PerSection>\r\n";
 
             xml += "</cim:LinearShuntCompensator>\r\n\r\n";
             _writer.Write(xml);
